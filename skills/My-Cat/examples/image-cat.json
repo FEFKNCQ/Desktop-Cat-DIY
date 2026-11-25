@@ -12,7 +12,15 @@
     "idle": "C:\\path\\to\\my-cat-idle.png",
     "blink": "C:\\path\\to\\my-cat-blink.png",
     "shy": "C:\\path\\to\\my-cat-shy.png",
-    "happy": "C:\\path\\to\\my-cat-happy.png"
+    "happy": "C:\\path\\to\\my-cat-happy.png",
+    "angry": "C:\\path\\to\\my-cat-angry.png",
+    "curious": "C:\\path\\to\\my-cat-curious.png"
+  },
+  "anchors": {
+    "headBox": { "x": 0.28, "y": 0.08, "w": 0.44, "h": 0.34 },
+    "leftPawBox": { "x": 0.18, "y": 0.62, "w": 0.24, "h": 0.18 },
+    "rightPawBox": { "x": 0.58, "y": 0.62, "w": 0.24, "h": 0.18 },
+    "tailAnchor": { "x": 0.82, "y": 0.72 }
   },
   "activate": true
 }

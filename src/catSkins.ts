@@ -11,11 +11,29 @@ export interface CatSpot {
 
 export type CatPattern = 'solid' | 'bicolor' | 'tuxedo' | 'tabby' | 'calico' | 'siamese';
 
+export interface CatImageBox {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+export interface CatImagePoint {
+  x: number;
+  y: number;
+}
+
 export interface CatImageSkin {
   idle: string;
   blink?: string;
   shy?: string;
   happy?: string;
+  angry?: string;
+  curious?: string;
+  headBox?: CatImageBox;
+  leftPawBox?: CatImageBox;
+  rightPawBox?: CatImageBox;
+  tailAnchor?: CatImagePoint;
   width?: number;
   height?: number;
 }

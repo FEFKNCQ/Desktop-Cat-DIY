@@ -42,6 +42,24 @@ fn default_image_height() -> u32 {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct CatImageBox {
+    /// Normalized 0..1 source-image coordinates.
+    pub x: f32,
+    pub y: f32,
+    pub w: f32,
+    pub h: f32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CatImagePoint {
+    /// Normalized 0..1 source-image coordinates.
+    pub x: f32,
+    pub y: f32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CatImageSkin {
     /// Stored filename inside <app_data>/cat-images/<cat-id>/
     pub idle: String,
@@ -51,6 +69,18 @@ pub struct CatImageSkin {
     pub shy: Option<String>,
     #[serde(default)]
     pub happy: Option<String>,
+    #[serde(default)]
+    pub angry: Option<String>,
+    #[serde(default)]
+    pub curious: Option<String>,
+    #[serde(default)]
+    pub head_box: Option<CatImageBox>,
+    #[serde(default)]
+    pub left_paw_box: Option<CatImageBox>,
+    #[serde(default)]
+    pub right_paw_box: Option<CatImageBox>,
+    #[serde(default)]
+    pub tail_anchor: Option<CatImagePoint>,
     #[serde(default = "default_image_width")]
     pub width: u32,
     #[serde(default = "default_image_height")]
@@ -299,6 +329,7 @@ pub fn import_image_cat_files(
     name_raw: &str,
     images: &serde_json::Value,
     colors: &serde_json::Value,
+    anchors: &serde_json::Value,
 ) -> Result<CatSkinConfig, String> {
     use std::collections::BTreeMap;
 
@@ -317,9 +348,9 @@ pub fn import_image_cat_files(
 
     let mut files: BTreeMap<String, String> = BTreeMap::new();
     for (expr, value) in obj {
-        if !matches!(expr.as_str(), "idle" | "blink" | "shy" | "happy") {
+        if !matches!(expr.as_str(), "idle" | "blink" | "shy" | "happy" | "angry" | "curious") {
             return Err(format!(
-                "Unsupported image expression '{}'. Use idle, blink, shy, or happy.",
+                "Unsupported image expression '{}'. Use idle, blink, shy, happy, angry, or curious.",
                 expr
             ));
         }
@@ -350,6 +381,12 @@ pub fn import_image_cat_files(
         "blink": asset_names.get("blink"),
         "shy": asset_names.get("shy"),
         "happy": asset_names.get("happy"),
+        "angry": asset_names.get("angry"),
+        "curious": asset_names.get("curious"),
+        "headBox": anchors.get("headBox").cloned().unwrap_or(serde_json::Value::Null),
+        "leftPawBox": anchors.get("leftPawBox").cloned().unwrap_or(serde_json::Value::Null),
+        "rightPawBox": anchors.get("rightPawBox").cloned().unwrap_or(serde_json::Value::Null),
+        "tailAnchor": anchors.get("tailAnchor").cloned().unwrap_or(serde_json::Value::Null),
         "width": default_image_width(),
         "height": default_image_height()
     });
@@ -407,6 +444,8 @@ pub fn get_cat_image_data_urls(id_raw: &str) -> Result<serde_json::Value, String
         ("blink", skin.blink.as_deref().unwrap_or("")),
         ("shy", skin.shy.as_deref().unwrap_or("")),
         ("happy", skin.happy.as_deref().unwrap_or("")),
+        ("angry", skin.angry.as_deref().unwrap_or("")),
+        ("curious", skin.curious.as_deref().unwrap_or("")),
     ];
     for (expr, filename) in entries {
         if filename.is_empty() {
@@ -830,10 +869,11 @@ pub fn cat_schema_guide() -> serde_json::Value {
         "imageSkin": {
             "tool": "import_image_cat",
             "requiredImages": ["idle"],
-            "optionalImages": ["blink", "shy", "happy"],
+            "optionalImages": ["blink", "shy", "happy", "angry", "curious"],
             "size": "224x278",
             "format": "8-bit RGB/RGBA PNG, transparent background recommended",
-            "config": "kind: 'image', imageSkin: { idle: 'idle.png', blink: 'blink.png', shy: 'shy.png', happy: 'happy.png', width: 224, height: 278 }",
+            "config": "kind: 'image', imageSkin: { idle: 'idle.png', blink: 'blink.png', shy: 'shy.png', happy: 'happy.png', angry: 'angry.png', curious: 'curious.png', width: 224, height: 278 }",
+            "anchors": "Optional normalized 0..1 boxes/points in imageSkin: headBox {x,y,w,h}, leftPawBox {x,y,w,h}, rightPawBox {x,y,w,h}, tailAnchor {x,y}. Paw boxes are cropped and placed on mouse/keyboard; tailAnchor moves the vector tail root.",
             "note": "Image skins force 2D Canvas rendering; 3D mode is unavailable for them. delete_cat removes the stored images."
         },
         "patterns": {

@@ -106,9 +106,36 @@ function validateOne(cat, index) {
       if (typeof cat.imageSkin.idle !== 'string' || !cat.imageSkin.idle.trim()) {
         errors.push('imageSkin.idle 是必填图片文件名');
       }
-      for (const key of ['blink', 'shy', 'happy']) {
+      for (const key of ['blink', 'shy', 'happy', 'angry', 'curious']) {
         if (cat.imageSkin[key] !== undefined && typeof cat.imageSkin[key] !== 'string') {
           errors.push(`imageSkin.${key} 必须是图片文件名字符串`);
+        }
+      }
+      for (const key of ['headBox', 'leftPawBox', 'rightPawBox']) {
+        const box = cat.imageSkin[key];
+        if (box === undefined) continue;
+        if (!isPlainObject(box)) {
+          errors.push(`imageSkin.${key} 必须是 {x,y,w,h} 对象`);
+          continue;
+        }
+        for (const part of ['x', 'y', 'w', 'h']) {
+          if (typeof box[part] !== 'number' || !Number.isFinite(box[part]) || box[part] < 0 || box[part] > 1) {
+            errors.push(`imageSkin.${key}.${part} 必须是 0..1 的归一化数字`);
+          }
+        }
+        if (typeof box.w === 'number' && box.w <= 0) errors.push(`imageSkin.${key}.w 必须大于 0`);
+        if (typeof box.h === 'number' && box.h <= 0) errors.push(`imageSkin.${key}.h 必须大于 0`);
+      }
+      const tailAnchor = cat.imageSkin.tailAnchor;
+      if (tailAnchor !== undefined) {
+        if (!isPlainObject(tailAnchor)) {
+          errors.push('imageSkin.tailAnchor 必须是 {x,y} 对象');
+        } else {
+          for (const part of ['x', 'y']) {
+            if (typeof tailAnchor[part] !== 'number' || !Number.isFinite(tailAnchor[part]) || tailAnchor[part] < 0 || tailAnchor[part] > 1) {
+              errors.push(`imageSkin.tailAnchor.${part} 必须是 0..1 的归一化数字`);
+            }
+          }
         }
       }
       for (const key of ['width', 'height']) {

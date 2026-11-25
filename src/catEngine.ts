@@ -8,7 +8,13 @@ import {
   resolveKeyByVk,
 } from './keyboardLayout';
 import { catAudio } from './audio';
-import { resolveCustomSkin, type CatSkinConfig, type ResolvedSkin } from './catSkins';
+import {
+  resolveCustomSkin,
+  type CatImageBox,
+  type CatImagePoint,
+  type CatSkinConfig,
+  type ResolvedSkin,
+} from './catSkins';
 import { DaFeiYuRenderer, type DaFeiYuLayout } from './dafeiyuRenderer';
 import { invoke } from '@tauri-apps/api/core';
 
@@ -255,6 +261,11 @@ export class KuroCatEngine {
   private imageSkinWidth = 224;
   private imageSkinHeight = 278;
   private imageSkinLoadVersion = 0;
+  private imageSkinHeadBox: CatImageBox | null = null;
+  private imageSkinLeftPawBox: CatImageBox | null = null;
+  private imageSkinRightPawBox: CatImageBox | null = null;
+  private imageSkinTailAnchor: CatImagePoint | null = null;
+  private lastImageSkinRect: { x: number; y: number; w: number; h: number } | null = null;
   private catTail = {
     heldVks: new Set<number>(),
     targetX: 320,
@@ -591,6 +602,10 @@ export class KuroCatEngine {
       const signature = JSON.stringify(skin);
       this.catBreed = 'black';
       this.customSkin = resolveCustomSkin(skin);
+      this.imageSkinHeadBox = skin.imageSkin?.headBox ?? null;
+      this.imageSkinLeftPawBox = skin.imageSkin?.leftPawBox ?? null;
+      this.imageSkinRightPawBox = skin.imageSkin?.rightPawBox ?? null;
+      this.imageSkinTailAnchor = skin.imageSkin?.tailAnchor ?? null;
       catAudio.setPurrIntensity(0);
       if (this.imageSkinId !== skin.id || this.imageSkinSignature !== signature) {
         this.imageSkinId = skin.id;
@@ -623,6 +638,11 @@ export class KuroCatEngine {
     this.imageSkinId = null;
     this.imageSkinSignature = '';
     this.imageSkinImages.clear();
+    this.imageSkinHeadBox = null;
+    this.imageSkinLeftPawBox = null;
+    this.imageSkinRightPawBox = null;
+    this.imageSkinTailAnchor = null;
+    this.lastImageSkinRect = null;
     this.imageSkinLoadVersion += 1;
   }
 
@@ -632,7 +652,7 @@ export class KuroCatEngine {
       .then((data) => {
         if (version !== this.imageSkinLoadVersion) return;
         const images = new Map<string, HTMLImageElement>();
-        for (const expr of ['idle', 'blink', 'shy', 'happy']) {
+        for (const expr of ['idle', 'blink', 'shy', 'happy', 'angry', 'curious']) {
           const src = data?.[expr];
           if (typeof src !== 'string' || !src.startsWith('data:image/')) continue;
           const img = new Image();
@@ -675,6 +695,10 @@ export class KuroCatEngine {
       expr = 'shy';
     } else if (blinkValue > 0.42 && this.imageSkinImages.has('blink')) {
       expr = 'blink';
+    } else if (this.crossAmount > 0.35 && this.imageSkinImages.has('angry')) {
+      expr = 'angry';
+    } else if (this.curiousAmount > 0.35 && this.imageSkinImages.has('curious')) {
+      expr = 'curious';
     } else if (
       (this.squintAmount > 0.35 || this.bubbles.length > 0 || mousePressing) &&
       this.imageSkinImages.has('happy')
@@ -684,11 +708,58 @@ export class KuroCatEngine {
     return this.imageSkinImages.get(expr) || this.imageSkinImages.get('idle') || null;
   }
 
+  private getImageSkinBaseRect(img: HTMLImageElement): { x: number; y: number; w: number; h: number } | null {
+    if (!img || !img.complete || !img.naturalWidth || !img.naturalHeight) return null;
+    const maxHeight = Math.max(80, this.catBaseY - this.catTopY);
+    const baseScale = Math.min((this.logicalW - 64) / img.naturalWidth, maxHeight / img.naturalHeight);
+    const w = img.naturalWidth * baseScale;
+    const h = img.naturalHeight * baseScale;
+    return { x: this.catCenterX - w / 2, y: this.catTopY + (maxHeight - h) / 2, w, h };
+  }
+
+  private mapImagePoint(
+    point: CatImagePoint,
+    rect: { x: number; y: number; w: number; h: number },
+  ): { x: number; y: number } {
+    return { x: rect.x + point.x * rect.w, y: rect.y + point.y * rect.h };
+  }
+
+  private mapImageBox(
+    box: CatImageBox,
+    rect: { x: number; y: number; w: number; h: number },
+  ): { x: number; y: number; w: number; h: number } {
+    return {
+      x: rect.x + box.x * rect.w,
+      y: rect.y + box.y * rect.h,
+      w: box.w * rect.w,
+      h: box.h * rect.h,
+    };
+  }
+
+  private drawCroppedImagePaw(ctx: CanvasRenderingContext2D, box: CatImageBox, x: number, y: number): boolean {
+    const img = this.pickImageSkinImage();
+    const rect = this.lastImageSkinRect;
+    if (!img || !rect || !img.complete || !img.naturalWidth || !img.naturalHeight) return false;
+    const mapped = this.mapImageBox(box, rect);
+    const sx = Math.max(0, Math.min(img.naturalWidth - 1, mapped.x / rect.w * img.naturalWidth));
+    const sy = Math.max(0, Math.min(img.naturalHeight - 1, mapped.y / rect.h * img.naturalHeight));
+    const sw = Math.max(1, Math.min(img.naturalWidth - sx, mapped.w / rect.w * img.naturalWidth));
+    const sh = Math.max(1, Math.min(img.naturalHeight - sy, mapped.h / rect.h * img.naturalHeight));
+    const drawW = Math.max(4, sw * rect.w / img.naturalWidth);
+    const drawH = Math.max(4, sh * rect.h / img.naturalHeight);
+    ctx.save();
+    ctx.globalAlpha = 0.96;
+    ctx.drawImage(img, sx, sy, sw, sh, x - drawW / 2, y - drawH / 2, drawW, drawH);
+    ctx.restore();
+    return true;
+  }
+
   private drawImageSkin(ctx: CanvasRenderingContext2D, breath: number, purrShift: number): boolean {
     const img = this.pickImageSkinImage();
     if (!img || !img.complete || !img.naturalWidth || !img.naturalHeight) return false;
-    const maxHeight = Math.max(80, this.catBaseY - this.catTopY);
-    const baseScale = Math.min((this.logicalW - 64) / img.naturalWidth, maxHeight / img.naturalHeight);
+    const rect = this.getImageSkinBaseRect(img);
+    if (!rect) return false;
+    this.lastImageSkinRect = rect;
 
     // Mirror the default black-cat state machine on top of a static image: typing adds a
     // subtle groove, curiosity enlarges/tilts, anger jitters, sleep sinks, purr keeps micro motion.
@@ -696,8 +767,8 @@ export class KuroCatEngine {
     const curiousLift = this.curiousAmount * 0.018;
     const sleepSink = this.sleepAmount * 0.018;
     const scaleBoost = 1 + breath * 0.006 + purrShift * 0.002 + typingLift + curiousLift - sleepSink;
-    const drawW = img.naturalWidth * baseScale;
-    const drawH = img.naturalHeight * baseScale;
+    const drawW = rect.w;
+    const drawH = rect.h;
 
     const angryJitter = this.crossAmount > 0.05 ? Math.sin(this.elapsed * 21) * this.crossAmount : 0;
     const curiousTilt = this.curiousAmount * Math.sin(this.elapsed * 4.6) * 0.012;
@@ -707,14 +778,20 @@ export class KuroCatEngine {
     );
     const offsetX = purrShift * 0.3 + this.typingSway * 1.6 + angryJitter * 1.4;
     const offsetY = this.typingHunch * 2.2 + this.sleepAmount * 3.2;
-    const centerX = this.catCenterX + offsetX;
-    const centerY = this.catTopY + (maxHeight - drawH) / 2 + drawH / 2 + offsetY;
+
+    let originX = rect.x + drawW / 2 + offsetX;
+    let originY = rect.y + drawH / 2 + offsetY;
+    if (this.imageSkinHeadBox) {
+      const head = this.mapImageBox(this.imageSkinHeadBox, rect);
+      originX = head.x + head.w / 2 + offsetX;
+      originY = head.y + head.h / 2 + offsetY;
+    }
 
     ctx.save();
-    ctx.translate(centerX, centerY);
+    ctx.translate(originX, originY);
     ctx.rotate(tilt);
     ctx.scale(scaleBoost, scaleBoost);
-    ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
+    ctx.drawImage(img, rect.x - originX, rect.y - originY, drawW, drawH);
     ctx.restore();
     return true;
   }
@@ -2579,8 +2656,17 @@ export class KuroCatEngine {
     const gentleDrift = Math.sin(this.elapsed * (0.9 + this.typingEnergy * 1.4)) * swayAmp;
     const hipRight = this.spinePoint(0.84, 0);
 
-    const startX = hipRight.x + 56;
-    const startY = hipRight.y - 2 + this.sleepAmount * 14;
+    let startX = hipRight.x + 56;
+    let startY = hipRight.y - 2 + this.sleepAmount * 14;
+    if (this.imageSkinId && this.imageSkinTailAnchor) {
+      const img = this.pickImageSkinImage();
+      const rect = img ? this.getImageSkinBaseRect(img) : null;
+      if (rect) {
+        const anchor = this.mapImagePoint(this.imageSkinTailAnchor, rect);
+        startX = anchor.x;
+        startY = anchor.y + this.sleepAmount * 10;
+      }
+    }
     let restCp1X = startX + 34;
     let restCp1Y = startY + 4 + gentleDrift * 0.25;
     let restCp2X = startX + 38;
@@ -4293,6 +4379,10 @@ export class KuroCatEngine {
 
   private drawPaw(ctx: CanvasRenderingContext2D, paw: PawState, breath: number): void {
     const imageIdleArm = Boolean(this.imageSkinId && paw.mode === 'idle');
+    if (this.imageSkinId) {
+      const pawBox = paw.side === 'left' ? this.imageSkinLeftPawBox : this.imageSkinRightPawBox;
+      if (pawBox && this.drawCroppedImagePaw(ctx, pawBox, paw.pos.x, paw.pos.y)) return;
+    }
 
     // 1) Seated idle vertical front legs (EXACT 4 clean lines of ORIG 0.3s!) OR planted diagonal supporting leg (ORIG 2.2s!)
     if (paw.idleWeight > 0.05 && !imageIdleArm) {

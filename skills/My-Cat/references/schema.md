@@ -112,8 +112,10 @@ KuroCat 支持两种皮肤：
 | `blink` | 否 | 眨眼 |
 | `shy` | 否 | 困倦 / 害羞 |
 | `happy` | 否 | 被摸 / 按键开心 |
+| `angry` | 否 | 生气 / 敲桌 |
+| `curious` | 否 | 好奇 / 歪头 |
 
-缺少可选表情时复用 `idle`。
+缺少可选表情时复用 `idle` 与通用形变反馈。
 
 ### 导入配置
 
@@ -123,11 +125,21 @@ KuroCat 支持两种皮肤：
   "name": "我家猫（照片皮肤）",
   "images": {
     "idle": "C:\\path\\to\\my-cat-idle.png",
-    "blink": "C:\\path\\to\\my-cat-blink.png"
+    "blink": "C:\\path\\to\\my-cat-blink.png",
+    "angry": "C:\\path\\to\\my-cat-angry.png",
+    "curious": "C:\\path\\to\\my-cat-curious.png"
+  },
+  "anchors": {
+    "headBox": { "x": 0.28, "y": 0.08, "w": 0.44, "h": 0.34 },
+    "leftPawBox": { "x": 0.18, "y": 0.62, "w": 0.24, "h": 0.18 },
+    "rightPawBox": { "x": 0.58, "y": 0.62, "w": 0.24, "h": 0.18 },
+    "tailAnchor": { "x": 0.82, "y": 0.72 }
   },
   "activate": true
 }
 ```
+
+`anchors` 全部可选，均为原图 0..1 归一化坐标。`headBox` 决定歪头形变中心，`leftPawBox` / `rightPawBox` 用于从图片裁出真实爪子贴到鼠标/键盘，`tailAnchor` 决定叠加尾巴根部。
 
 ### MCP 工具
 

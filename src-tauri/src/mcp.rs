@@ -121,13 +121,15 @@ fn tool_definitions() -> Value {
                     "name": { "type": "string", "description": "Display name shown in menu" },
                     "images": {
                         "type": "object",
-                        "description": "Expression -> local PNG path. idle is required; blink, shy, happy are optional.",
+                        "description": "Expression -> local PNG path. idle is required; blink, shy, happy, angry, curious are optional.",
                         "required": ["idle"],
                         "properties": {
                             "idle": { "type": "string", "description": "Absolute path to idle.png (224x278)" },
                             "blink": { "type": "string" },
                             "shy": { "type": "string" },
-                            "happy": { "type": "string" }
+                            "happy": { "type": "string" },
+                            "angry": { "type": "string" },
+                            "curious": { "type": "string" }
                         },
                         "additionalProperties": false
                     },
@@ -145,6 +147,17 @@ fn tool_definitions() -> Value {
                             "noseColor": { "type": "string" },
                             "eyeColorTop": { "type": "string" },
                             "eyeColorBottom": { "type": "string" }
+                        },
+                        "additionalProperties": false
+                    },
+                    "anchors": {
+                        "type": "object",
+                        "description": "Optional normalized 0..1 boxes/points sampled from the generated image for precise alignment.",
+                        "properties": {
+                            "headBox": { "type": "object", "properties": { "x": { "type": "number" }, "y": { "type": "number" }, "w": { "type": "number" }, "h": { "type": "number" } }, "required": ["x", "y", "w", "h"] },
+                            "leftPawBox": { "type": "object", "properties": { "x": { "type": "number" }, "y": { "type": "number" }, "w": { "type": "number" }, "h": { "type": "number" } }, "required": ["x", "y", "w", "h"] },
+                            "rightPawBox": { "type": "object", "properties": { "x": { "type": "number" }, "y": { "type": "number" }, "w": { "type": "number" }, "h": { "type": "number" } }, "required": ["x", "y", "w", "h"] },
+                            "tailAnchor": { "type": "object", "properties": { "x": { "type": "number" }, "y": { "type": "number" } }, "required": ["x", "y"] }
                         },
                         "additionalProperties": false
                     },
@@ -285,7 +298,8 @@ fn execute_tool(name: &str, args: &Value, on_change: &dyn Fn()) -> Value {
                 return err_text("Missing required 'images' object argument.");
             };
             let colors = args.get("colors").cloned().unwrap_or_else(|| json!({}));
-            match import_image_cat_files(id_raw, name_raw, images, &colors) {
+            let anchors = args.get("anchors").cloned().unwrap_or_else(|| json!({}));
+            match import_image_cat_files(id_raw, name_raw, images, &colors, &anchors) {
                 Ok(saved) => {
                     let activate = args
                         .get("activate")

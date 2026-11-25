@@ -67,16 +67,47 @@ function validatePayload(payload, activateArg) {
     errors.push('images 必须是对象');
     return errors;
   }
+  const allowedImageKeys = ['idle', 'blink', 'shy', 'happy', 'angry', 'curious'];
   for (const key of Object.keys(payload.images)) {
-    if (!['idle', 'blink', 'shy', 'happy'].includes(key)) {
-      errors.push(`images.${key} 不支持，只能用 idle/blink/shy/happy`);
+    if (!allowedImageKeys.includes(key)) {
+      errors.push(`images.${key} 不支持，只能用 idle/blink/shy/happy/angry/curious`);
     }
   }
   if (!payload.images.idle) errors.push('images.idle 是必填项');
-  for (const key of ['idle', 'blink', 'shy', 'happy']) {
+  for (const key of allowedImageKeys) {
     if (payload.images[key] !== undefined) {
       const error = validatePng(payload.images[key], `images.${key}`);
       if (error) errors.push(error);
+    }
+  }
+  if (payload.anchors !== undefined) {
+    if (!payload.anchors || typeof payload.anchors !== 'object' || Array.isArray(payload.anchors)) {
+      errors.push('anchors 必须是对象');
+    } else {
+      const isUnit = (value) => typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 1;
+      for (const key of ['headBox', 'leftPawBox', 'rightPawBox']) {
+        const box = payload.anchors[key];
+        if (box === undefined) continue;
+        if (!box || typeof box !== 'object' || Array.isArray(box)) {
+          errors.push(`anchors.${key} 必须是 {x,y,w,h} 对象`);
+          continue;
+        }
+        for (const part of ['x', 'y', 'w', 'h']) {
+          if (!isUnit(box[part])) errors.push(`anchors.${key}.${part} 必须是 0..1 的数字`);
+        }
+        if (typeof box.w === 'number' && box.w <= 0) errors.push(`anchors.${key}.w 必须大于 0`);
+        if (typeof box.h === 'number' && box.h <= 0) errors.push(`anchors.${key}.h 必须大于 0`);
+      }
+      const tail = payload.anchors.tailAnchor;
+      if (tail !== undefined) {
+        if (!tail || typeof tail !== 'object' || Array.isArray(tail)) {
+          errors.push('anchors.tailAnchor 必须是 {x,y} 对象');
+        } else {
+          for (const part of ['x', 'y']) {
+            if (!isUnit(tail[part])) errors.push(`anchors.tailAnchor.${part} 必须是 0..1 的数字`);
+          }
+        }
+      }
     }
   }
   if (payload.colors !== undefined) {
@@ -174,7 +205,7 @@ async function main() {
   const toolList = await rpc(args.url, 'tools/list');
   const toolNames = (toolList?.result?.tools || []).map((tool) => tool?.name).filter(Boolean);
   if (!toolNames.includes('import_image_cat')) {
-    throw new Error(`当前 MCP 缺少 import_image_cat（工具：${toolNames.join(', ') || '无'}）。请关闭/卸载旧版 KuroCat，改用 v5.2.4+ 安装包或从 main 源码启动。`);
+    throw new Error(`当前 MCP 缺少 import_image_cat（工具：${toolNames.join(', ') || '无'}）。请关闭/卸载旧版 KuroCat，改用 v5.2.5+ 安装包或从 main 源码启动。`);
   }
 
   const argumentsPayload = {
@@ -182,6 +213,7 @@ async function main() {
     name: payload.name,
     images: payload.images,
     colors: payload.colors || {},
+    anchors: payload.anchors || {},
     activate: typeof payload.activate === 'boolean' ? payload.activate : args.activate
   };
 
