@@ -1,9 +1,9 @@
 ---
 name: My-Cat
-description: 根据用户提供的猫咪照片/截图，为 Desktop-Cat-DIY / KuroCat 生成自定义桌宠。支持两条路线：参数化卡通还原（CatSkinConfig JSON + upsert_cat）和真实图片皮肤（224x278 透明 PNG + import_image_cat）。当用户说“按这张照片捏猫”“把我家猫做成桌宠”“用 KuroCat MCP 自定义猫”时使用。
+description: 根据用户提供的猫咪照片/截图/卡通图，为 Desktop-Cat-DIY / KuroCat 生成自定义桌宠并直接安装启动、导入切换。支持参数化还原（CatSkinConfig JSON + upsert_cat）和真实图片皮肤（224x278 透明 PNG + import_image_cat）。当用户说“用 My-Cat skill”“用 FEFKNCQ/Desktop-Cat-DIY 的 My-Cat skill”“把这张图做成我的专属桌宠”“按这张照片捏猫”“用 KuroCat MCP 自定义猫”时使用。若不在项目目录，先从 https://github.com/FEFKNCQ/Desktop-Cat-DIY 获取 skills/My-Cat/SKILL.md。
 ---
 
-# KuroCat 照片定制猫
+# My-Cat 照片定制猫
 
 这个技能把用户猫照片变成 Desktop-Cat-DIY 可直接加载的桌宠。根据用户需求分两条路线：
 
@@ -17,6 +17,30 @@ description: 根据用户提供的猫咪照片/截图，为 Desktop-Cat-DIY / Ku
 - 用户说“尽量像照片 / 一模一样 / 用我生成的图” → **路线 B**
 - 用户说“卡通一点 / 捏一只 / 快一点 / 只要配色花纹” → **路线 A**
 - 不确定时先问一句，但不要重复提问
+
+## 触发短语
+
+以下说法都视为明确触发本 skill，不需要用户再补充路径或细节：
+
+```text
+用 My-Cat skill，把这张图做成我的专属桌宠，直接安装启动、导入切换。
+```
+
+```text
+用 GitHub 上 FEFKNCQ/Desktop-Cat-DIY 的 My-Cat skill，把我上传的这张图做成桌宠。
+```
+
+```text
+按这张猫照片捏一只 KuroCat / Desktop-Cat-DIY 桌宠。
+```
+
+Agent 不在项目目录时，先从：
+
+```text
+https://github.com/FEFKNCQ/Desktop-Cat-DIY
+```
+
+获取 `skills/My-Cat/SKILL.md`，再按本流程执行。
 
 ## 核心原则
 

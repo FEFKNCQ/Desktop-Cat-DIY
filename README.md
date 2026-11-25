@@ -24,6 +24,22 @@
 
 轻量级 **Windows（Win11/10 & Win7 SP1）/ macOS（10.15+ Apple Silicon & Intel）/ Linux（银河麒麟 KylinOS / Ubuntu / UOS）** 透明置顶桌面打字猫咪伴侣（开箱自带 **6 款手绘猫咪皮肤 + 🐳 大肥鱼（鲸鱼娘）**：经典小黑猫、暖奶茶布偶猫、大橘猫、三花猫、奶牛猫、暹罗猫、大肥鱼，支持**输密码自动闭眼/捂眼防偷窥**，并原生内置 **MCP 协议服务端**，支持用 AI 一句话定制或新增更多你自己的猫咪！），基于 **Tauri v2（Rust 全局原生钩子 + 内置 MCP 引擎 + HTML5 Canvas 2D）** 打造。单文件轻量低耗，零外部运行时依赖。
 
+## 🤖 给 Agent 的一句话指令
+
+Agent 可读取本仓库的 `AGENTS.md` 自动执行。你只需要上传一张猫咪照片或卡通图，然后说：
+
+```text
+用 GitHub 上 FEFKNCQ/Desktop-Cat-DIY 的 My-Cat skill，把我上传的这张图做成专属桌宠，直接安装启动 Desktop-Cat-DIY、导入并切换，完成后告诉我结果。
+```
+
+如果你已经在本仓库目录中，可以更简单：
+
+```text
+用 My-Cat skill，把这张图做成我的桌宠，直接安装启动、导入切换。
+```
+
+Agent 会自动按 `skills/My-Cat/SKILL.md` 完成：安装依赖 → 启动应用 → 等待 MCP → 生成 224×278 透明 PNG 或参数化 JSON → 导入 → 切换 → `list_cats` 验证。
+
 ## 🎬 在线试玩预览 & 鲸鱼娘 14s 演示视频
 
 <table>

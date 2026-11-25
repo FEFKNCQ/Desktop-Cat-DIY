@@ -23,6 +23,20 @@
 
 A lightweight, transparent, always-on-top desktop typing & mouse companion for **Windows (Win11/10 & Win7 SP1) / macOS (10.15+ Apple Silicon & Intel) / Linux (Ubuntu / Debian / KylinOS / UOS)** — built with **Tauri v2 (native Rust global hooks + built-in MCP server + Three.js 3D / HTML5 Canvas 2D dual engine)**. Zero external runtime dependencies, ~24 MB RAM footprint. Defaults to **✨ 3D Volumetric Figurine Mode** with one-click switching to **🎨 2D Classic Hand-Drawn**, and ships out of the box with **6 hand-crafted cat skins + 🐳 BigFish (whale-girl)** (Classic Black Cat, Ragdoll, Orange Tabby, Calico, Tuxedo, Siamese, and BigFish), **optional 3D collar bells & gaming headset (auto-equips in PC games, both off by default)**, **system-level password privacy guard**, **4 customizable tail-key patting modes**, **native OBS transparent Browser Source**, and a **built-in MCP server** so AI can create your own cat from a photo in one sentence (with 1:1 `spots[]` markings synced across 3D & 2D)!
 
+## 🤖 One prompt for your Agent
+
+Agents can read `AGENTS.md` in this repository. Upload a cat photo or cartoon image and simply say:
+
+```text
+Use the My-Cat skill from https://github.com/FEFKNCQ/Desktop-Cat-DIY to turn this image into my custom desktop pet. Install and start Desktop-Cat-DIY, import it, switch to it, and report the result.
+```
+
+Already inside this repository? Just say:
+
+```text
+Use the My-Cat skill to turn this image into my desktop pet, then install, import and switch.
+```
+
 ## 🎬 Live Web Playground & 14s BigFish Demo Video
 
 <table>
