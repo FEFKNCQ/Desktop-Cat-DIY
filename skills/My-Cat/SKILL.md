@@ -1,6 +1,6 @@
 ---
 name: My-Cat
-description: 根据用户提供的猫咪照片/截图/卡通图，为 Desktop-Cat-DIY / KuroCat 生成自定义桌宠并直接安装启动、导入切换。支持参数化还原（CatSkinConfig JSON + upsert_cat）和真实图片皮肤（224x278 透明 PNG + import_image_cat）。当用户说“用 My-Cat skill”“用 FEFKNCQ/Desktop-Cat-DIY 的 My-Cat skill”“把这张图做成我的专属桌宠”“按这张照片捏猫”“用 KuroCat MCP 自定义猫”时使用。若不在项目目录，先从 https://github.com/FEFKNCQ/Desktop-Cat-DIY 获取 skills/My-Cat/SKILL.md。
+description: 根据用户上传的至少一张参考图片（照片、截图或卡通图均可），为 Desktop-Cat-DIY / KuroCat 生成尽量还原的专属桌宠，并直接部署到本机、启动、导入、切换。支持参数化还原（CatSkinConfig JSON + upsert_cat）和真实图片皮肤（224x278 透明 PNG + import_image_cat）。标准触发语：“用 GitHub 上作者 FEFKNCQ 的Desktop-Cat-DIY 部署到本机，用 My-Cat skill 把我上传的图做成我的专属桌宠，直接帮我导入并切换”。也响应用户说“用 My-Cat skill”“把这张图做成我的桌宠”“按这张照片捏猫”。不要询问实拍还是卡通；若不在项目目录，先从 https://github.com/FEFKNCQ/Desktop-Cat-DIY 获取 skills/My-Cat/SKILL.md。
 ---
 
 # My-Cat 照片定制猫
@@ -14,25 +14,25 @@ description: 根据用户提供的猫咪照片/截图/卡通图，为 Desktop-Ca
 
 默认策略：
 
-- 用户说“尽量像照片 / 一模一样 / 用我生成的图” → **路线 B**
-- 用户说“卡通一点 / 捏一只 / 快一点 / 只要配色花纹” → **路线 A**
-- 不确定时先问一句，但不要重复提问
+- **至少一张参考图片是硬要求**；用户没给就只请用户补充，不继续安装/导入
+- **不要询问“实拍还是卡通”**；照片、截图、卡通图一视同仁
+- 默认按“尽量还原参考图”执行 → **路线 B（图片皮肤）**
+- 只有用户明确说“只要配色花纹 / 参数化 / 卡通一点 / 快一点” → **路线 A**
+- 不再追问图片风格，不因为实拍/卡通而改变流程
 
-## 触发短语
+## 标准触发语
 
-以下说法都视为明确触发本 skill，不需要用户再补充路径或细节：
-
-```text
-用 My-Cat skill，把这张图做成我的专属桌宠，直接安装启动、导入切换。
-```
+用户只需说这一句：
 
 ```text
-用 GitHub 上 FEFKNCQ/Desktop-Cat-DIY 的 My-Cat skill，把我上传的这张图做成桌宠。
+用 GitHub 上作者 FEFKNCQ 的Desktop-Cat-DIY 部署到本机，用 My-Cat skill 把我上传的图做成我的专属桌宠，直接帮我导入并切换
 ```
 
-```text
-按这张猫照片捏一只 KuroCat / Desktop-Cat-DIY 桌宠。
-```
+要求：
+
+- 用户必须已上传**至少一张参考图片**；没有图片时只请求补充，不做安装/导入
+- 不要询问“实拍还是卡通”，也不要让用户二选一
+- 默认按“尽量还原参考图”执行，优先图片皮肤路线
 
 Agent 不在项目目录时，先从：
 
@@ -143,7 +143,8 @@ http://127.0.0.1:27420/mcp
 - Desktop-Cat-DIY / KuroCat 已运行
 - 已在托盘确认「开启 MCP 扩展」
 - Agent 能访问 `http://127.0.0.1:27420/mcp`，或宿主已连接项目 MCP
-- Agent 能看到用户发的猫照片；看不到就请用户描述毛色、花纹、眼睛颜色
+- 用户已上传**至少一张参考图片**；没有时只请求补充，不用文字描述替代
+- Agent 能读取该图片；不要询问“实拍还是卡通”，默认尽量还原
 
 ---
 
@@ -280,6 +281,7 @@ node skills/My-Cat/scripts/import_image_cat.mjs image-cat.json
 
 ## 不要做的事
 
+- 不要询问“实拍还是卡通”；不要在用户未提供参考图时用纯文字描述直接生成
 - 不要把图片 URL、base64 或用户目录路径写进 `cats.json`
 - 不要跳过 PNG 尺寸校验
 - 不要在 3D 模式下期待图片皮肤生效
