@@ -35,12 +35,12 @@ https://github.com/FEFKNCQ/Desktop-Cat-DIY
 ## 标准流程
 
 1. 读取 `skills/My-Cat/SKILL.md`
-2. 安装/启动（必须从 main 源码构建，或使用 v5.2.1+ 安装包；**v5.1.0 旧包的 MCP 没有 `import_image_cat`**）：
+2. 安装/启动（必须从 main 源码构建，或使用 v5.2.2+ 安装包；**v5.1.0 旧包的 MCP 没有 `import_image_cat`**）：
    ```bash
    npm run cat:bootstrap -- --check-only
    npm run cat:bootstrap -- --start
    ```
-   如果用户已经安装了旧包，先卸载/关闭旧 KuroCat，再用 main 源码启动，或改用 v5.2.1+ 安装包。
+   如果用户已经安装了旧包，先卸载/关闭旧 KuroCat，再用 main 源码启动，或改用 v5.2.2+ 安装包。
 3. 如果 MCP 端口未就绪，提示用户在托盘勾选「开启 MCP 扩展」，不要反复重启
 4. 检查参考图片：
    - 没有图片：请用户至少上传一张，不继续安装/导入
@@ -56,7 +56,7 @@ https://github.com/FEFKNCQ/Desktop-Cat-DIY
    - `npm run cat:validate -- cat.json`
    - `npm run cat:upsert -- cat.json`
 7. 调用 MCP `list_cats` 验证新 ID 与激活状态
-8. 向用户报告：桌宠名称、ID、使用路线、是否切换成功
+8. 确认切换成功后向用户报告：桌宠名称、ID、使用路线、是否切换成功。系统托盘头像会由程序自动生成并切换，Agent 不需要额外调用图标命令；桌面快捷方式和 EXE 图标不会随运行时改变
 
 ## 约束
 

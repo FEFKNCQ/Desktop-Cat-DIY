@@ -19,6 +19,64 @@ fn default_tray_tooltip() -> &'static str {
     "KuroCat"
 }
 
+fn decode_base64(input: &str) -> Result<Vec<u8>, String> {
+    fn value(byte: u8) -> Option<u8> {
+        match byte {
+            b'A'..=b'Z' => Some(byte - b'A'),
+            b'a'..=b'z' => Some(byte - b'a' + 26),
+            b'0'..=b'9' => Some(byte - b'0' + 52),
+            b'+' => Some(62),
+            b'/' => Some(63),
+            _ => None,
+        }
+    }
+
+    let bytes = input.as_bytes();
+    let mut out = Vec::with_capacity(bytes.len() / 4 * 3);
+    let mut buffer = [0u8; 4];
+    let mut count = 0usize;
+    for &byte in bytes {
+        if byte == b'=' {
+            break;
+        }
+        if byte.is_ascii_whitespace() {
+            continue;
+        }
+        buffer[count] = value(byte).ok_or_else(|| "Invalid base64 character".to_string())?;
+        count += 1;
+        if count == 4 {
+            out.push((buffer[0] << 2) | (buffer[1] >> 4));
+            out.push((buffer[1] << 4) | (buffer[2] >> 2));
+            out.push((buffer[2] << 6) | buffer[3]);
+            count = 0;
+        }
+    }
+    if count == 1 {
+        return Err("Invalid base64 length".to_string());
+    }
+    if count >= 2 {
+        out.push((buffer[0] << 2) | (buffer[1] >> 4));
+    }
+    if count == 3 {
+        out.push((buffer[1] << 4) | (buffer[2] >> 2));
+    }
+    Ok(out)
+}
+
+pub fn set_tray_icon_from_data_url(app: &AppHandle, data_url: &str) -> Result<(), String> {
+    const PREFIX: &str = "data:image/png;base64,";
+    let encoded = data_url
+        .strip_prefix(PREFIX)
+        .ok_or_else(|| "Tray avatar must be a PNG data URL".to_string())?;
+    let bytes = decode_base64(encoded)?;
+    let icon = Image::from_bytes(&bytes).map_err(|e| format!("Invalid tray avatar PNG: {}", e))?;
+    let tray = app
+        .tray_by_id("kuro-tray")
+        .ok_or_else(|| "Tray icon is not initialized".to_string())?;
+    tray.set_icon(Some(icon))
+        .map_err(|e| format!("Failed to set tray avatar: {}", e))
+}
+
 pub fn setup_tray(app: &AppHandle, initial: &AppSettings) -> tauri::Result<()> {
     #[cfg(windows)]
     let display_menu = crate::windows_display::create_menu(app)?;

@@ -9,7 +9,7 @@ import {
   type TailKeyMode,
 } from './catEngine';
 import { catAudio } from './audio';
-import { DEFAULT_BUILTIN_CATS, type CatSkinConfig } from './catSkins';
+import { DEFAULT_BUILTIN_CATS, resolveCustomSkin, type CatSkinConfig } from './catSkins';
 import {
   getKeyboardLayout,
   resolveKeyByVk,
@@ -317,6 +317,189 @@ function updateScaleSliderVisual(scaleVal: number): void {
   }
 }
 
+let lastTrayAvatarKey = '';
+let trayAvatarSeq = 0;
+
+function catAvatarSignature(cat: CatSkinConfig): string {
+  return [
+    cat.id,
+    cat.kind || 'params',
+    cat.furColor || '',
+    cat.outlineColor || '',
+    cat.eyeColorTop || '',
+    cat.noseColor || '',
+    cat.emoji || '',
+    JSON.stringify(cat.imageSkin || {}),
+  ].join('|');
+}
+
+function loadImageElement(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error('avatar image load failed'));
+    img.src = src;
+  });
+}
+
+function drawVectorCatAvatar(ctx: CanvasRenderingContext2D, cat: CatSkinConfig, size: number): void {
+  const skin = resolveCustomSkin(cat);
+  const s = size / 64;
+  const outline = skin.outlineColor || (skin.isDarkBase ? '#20242a' : '#524840');
+
+  ctx.save();
+  ctx.scale(s, s);
+  ctx.lineJoin = 'round';
+
+  ctx.fillStyle = skin.earOuterColor;
+  ctx.strokeStyle = outline;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(10, 27);
+  ctx.lineTo(15, 7);
+  ctx.lineTo(29, 20);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(35, 20);
+  ctx.lineTo(49, 7);
+  ctx.lineTo(54, 27);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  if (skin.earInnerColor) {
+    ctx.fillStyle = skin.earInnerColor;
+    ctx.beginPath();
+    ctx.moveTo(15, 12);
+    ctx.lineTo(18, 22);
+    ctx.lineTo(25, 20);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(49, 12);
+    ctx.lineTo(46, 22);
+    ctx.lineTo(39, 20);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  ctx.fillStyle = skin.furColor;
+  ctx.beginPath();
+  ctx.ellipse(32, 36, 24, 22, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  if (skin.stripeColor) {
+    ctx.strokeStyle = skin.stripeColor;
+    ctx.lineWidth = 3;
+    for (const dx of [-8, 0, 8]) {
+      ctx.beginPath();
+      ctx.moveTo(32 + dx, 18);
+      ctx.lineTo(32 + dx, 27);
+      ctx.stroke();
+    }
+  }
+
+  ctx.fillStyle = skin.eyeColorTop;
+  ctx.beginPath();
+  ctx.ellipse(23, 34, 6, 7, 0, 0, Math.PI * 2);
+  ctx.ellipse(41, 34, 6, 7, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = skin.pupilColor;
+  ctx.beginPath();
+  ctx.ellipse(23, 35, 2.2, 5, 0, 0, Math.PI * 2);
+  ctx.ellipse(41, 35, 2.2, 5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  if (skin.eyeCatchlight) {
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(24.5, 31.5, 1.6, 0, Math.PI * 2);
+    ctx.arc(42.5, 31.5, 1.6, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  if (skin.noseColor) {
+    ctx.fillStyle = skin.noseColor;
+    ctx.beginPath();
+    ctx.moveTo(28, 43);
+    ctx.lineTo(36, 43);
+    ctx.lineTo(32, 48);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.strokeStyle = skin.mouthColor || outline;
+  ctx.lineWidth = 1.4;
+  ctx.beginPath();
+  ctx.arc(29, 49, 4, 0, Math.PI * 0.9);
+  ctx.arc(35, 49, 4, Math.PI * 0.1, Math.PI);
+  ctx.stroke();
+
+  ctx.strokeStyle = skin.whiskerColor;
+  ctx.lineWidth = 1.2;
+  for (const y of [42, 47, 52]) {
+    ctx.beginPath();
+    ctx.moveTo(12, y);
+    ctx.lineTo(23, y + 1);
+    ctx.moveTo(52, y);
+    ctx.lineTo(41, y + 1);
+    ctx.stroke();
+  }
+
+  if (skin.accentColor) {
+    ctx.strokeStyle = skin.accentColor;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(17, 55);
+    ctx.quadraticCurveTo(32, 63, 47, 55);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+async function buildCatAvatarDataUrl(cat: CatSkinConfig, size = 64): Promise<string> {
+  const canvasEl = document.createElement('canvas');
+  canvasEl.width = size;
+  canvasEl.height = size;
+  const ctx = canvasEl.getContext('2d');
+  if (!ctx) throw new Error('canvas 2d context unavailable');
+
+  if (cat.kind === 'image' && cat.imageSkin?.idle) {
+    const images = await invoke<Record<string, unknown>>('get_cat_images', { id: cat.id });
+    const src = images?.idle;
+    if (typeof src === 'string' && src.startsWith('data:image/')) {
+      const img = await loadImageElement(src);
+      const crop = Math.min(img.naturalWidth, img.naturalHeight);
+      const sx = (img.naturalWidth - crop) / 2;
+      const sy = (img.naturalHeight - crop) * 0.12;
+      ctx.clearRect(0, 0, size, size);
+      ctx.drawImage(img, sx, sy, crop, crop, 0, 0, size, size);
+      return canvasEl.toDataURL('image/png');
+    }
+  }
+
+  ctx.clearRect(0, 0, size, size);
+  drawVectorCatAvatar(ctx, cat, size);
+  return canvasEl.toDataURL('image/png');
+}
+
+async function syncTrayAvatar(cat: CatSkinConfig | undefined): Promise<void> {
+  if (!cat) return;
+  const key = catAvatarSignature(cat);
+  if (key === lastTrayAvatarKey) return;
+  lastTrayAvatarKey = key;
+  const seq = ++trayAvatarSeq;
+  try {
+    const dataUrl = await buildCatAvatarDataUrl(cat);
+    if (seq !== trayAvatarSeq) return;
+    await invoke('set_tray_icon', { dataUrl });
+  } catch (error) {
+    if (seq === trayAvatarSeq) lastTrayAvatarKey = '';
+    console.warn('[KuroCat] Failed to update tray avatar:', error);
+  }
+}
+
 function syncMenuUI(): void {
   const setCheck = (id: string, on: boolean) => {
     const el = document.getElementById(id);
@@ -402,6 +585,7 @@ function syncMenuUI(): void {
 
   engine.showKeyBubbles = settings.showKeyBubbles;
   engine.setCatAppearance(activeCat?.id || 'black', activeCat);
+  void syncTrayAvatar(activeCat);
   engine.setHeadphones(shouldWearHeadphonesNow());
   engine.setKeyboardConfig(kbLayout, kbOrient);
   engine.setTailKeyConfig(tailMode, tailIds);

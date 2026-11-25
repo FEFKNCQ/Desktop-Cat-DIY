@@ -298,6 +298,11 @@ fn get_cat_images(id: String) -> Result<serde_json::Value, String> {
 }
 
 #[tauri::command]
+fn set_tray_icon(app: AppHandle, data_url: String) -> Result<(), String> {
+    tray::set_tray_icon_from_data_url(&app, &data_url)
+}
+
+#[tauri::command]
 fn get_game_active() -> bool {
     game_detect::is_game_active()
 }
@@ -2463,6 +2468,7 @@ pub fn run() {
             get_settings,
             get_cats,
             get_cat_images,
+            set_tray_icon,
             get_game_active,
             get_mcp_config,
             get_obs_url,

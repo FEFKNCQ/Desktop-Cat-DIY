@@ -33,7 +33,7 @@ Agents can read `AGENTS.md` in this repository. Upload **at least one reference 
 
 Do not specify whether the image is a photo or cartoon. The Agent will default to “restore it as closely as possible”. Without a reference image, the Agent will only ask you to upload one.
 
-> Use a build from `main` or the **v5.2.1+** installer. The old v5.1.0 package does not expose `import_image_cat` in MCP.
+> Use a build from `main` or the **v5.2.2+** installer. The old v5.1.0 package does not expose `import_image_cat` in MCP.
 
 ## 🎬 Live Web Playground & 14s BigFish Demo Video
 
@@ -65,9 +65,9 @@ Do not specify whether the image is a photo or cartoon. The Agent will default t
 
 ## 📥 Direct Downloads (Windows / Win7 / macOS / Linux)
 
-Visit [Releases](https://github.com/FEFKNCQ/Desktop-Cat-DIY/releases) or grab the latest **`v5.2.1`** installers below (featuring **✨ 3D Volumetric Figurine Mode & 🎨 2D Classic Hand-Drawn dual engine (3D default)**, **2D/3D plush arm proportions & coat-blending upgrade**, **optional 3D collar bells & gaming headphones with automatic PC game detection (both off by default)**, **1:1 MCP AI `spots[]` custom fur in 3D & 2D**, **28s anti-1px-jitter auto-sleep**, **unclamped top-of-screen free dragging**, **4 tail-patting modes + keycap picker**, **floating side menu**, **built-in OBS transparent Browser Source**, **password privacy guard**, and **in-app auto-update**):
+Visit [Releases](https://github.com/FEFKNCQ/Desktop-Cat-DIY/releases) or grab the latest **`v5.2.2`** installers below (featuring **✨ 3D Volumetric Figurine Mode & 🎨 2D Classic Hand-Drawn dual engine (3D default)**, **2D/3D plush arm proportions & coat-blending upgrade**, **optional 3D collar bells & gaming headphones with automatic PC game detection (both off by default)**, **1:1 MCP AI `spots[]` custom fur in 3D & 2D**, **28s anti-1px-jitter auto-sleep**, **unclamped top-of-screen free dragging**, **4 tail-patting modes + keycap picker**, **floating side menu**, **built-in OBS transparent Browser Source**, **password privacy guard**, and **in-app auto-update**):
 
-- **🪟 Windows 10 / 11 (65% Installer · `v5.2.1`)**: [**`KuroCat_5.2.1_x64-setup.exe`**](https://github.com/FEFKNCQ/Desktop-Cat-DIY/releases/download/v5.2.1/KuroCat_5.2.1_x64-setup.exe) (2.15 MB) | [**Fast Mirror**](https://qianyi.one/kurocat/?lang=en#download)
+- **🪟 Windows 10 / 11 (65% Installer · `v5.2.2`)**: [**`KuroCat_5.2.2_x64-setup.exe`**](https://github.com/FEFKNCQ/Desktop-Cat-DIY/releases/download/v5.2.2/KuroCat_5.2.2_x64-setup.exe) (2.15 MB) | [**Fast Mirror**](https://qianyi.one/kurocat/?lang=en#download)
   - Defaults to the 65% mechanical keyboard and creates Desktop, Start Menu, and Uninstaller entries. Switch anytime via right-click or system tray to **108-key full-size**, **🐳 BigFish**, **OBS transparent source**, or **Check for Updates**.
   - **Tips & FAQ**:
     - **Browser "isn't commonly downloaded" / Windows SmartScreen prompt**: KuroCat is 100% open-source without a commercial EV code-signing certificate.
@@ -78,14 +78,14 @@ Visit [Releases](https://github.com/FEFKNCQ/Desktop-Cat-DIY/releases) or grab th
     - **Fullscreen Games / Admin Elevation / OBS Streaming**: Features a non-focus-stealing topmost Z-order guard for borderless & FSO games (enable **Lock Click-Through** and hold `Alt` anytime to move/right-click). If a game runs elevated, right-click the tray icon → **Restart as Administrator**. For OBS streaming without chroma-key, right-click → **Copy OBS Transparent Source URL** (`http://127.0.0.1:27421/obs`, supports **OBS-Only Mode** + synced password privacy). For kernel anti-cheat games (e.g. Valorant), use tray → **Pause Hook & Hide (Anti-Cheat Safe Mode)**.
 - **🖥️ Windows 7 SP1 (64-bit Dedicated Portable · `v5.1.0`)**: [**`KuroCat-v5.1.0-win7-x64-portable.zip`**](https://github.com/FEFKNCQ/Desktop-Cat-DIY/releases/download/v5.1.0/KuroCat-v5.1.0-win7-x64-portable.zip) (178.94 MB) | [**Fast Mirror**](https://qianyi.one/kurocat/releases/v5.1.0/KuroCat-v5.1.0-win7-x64-portable.zip)
   - Native PE 6.01 build (zero Win8/Win10 DLL imports), bundles Microsoft's final Win7 offline **WebView2 109.0.1518.78** runtime, and uses native Win7 **256-level per-pixel anti-aliased `UpdateLayeredWindow`** compositing (zero white box with or without Aero). Extract all files and run `KuroCat.exe` alongside `WebView2Runtime`.
-- **🍎 macOS 10.15 Catalina+ (Apple Silicon M1–M4 & Intel Universal · `v5.2.1`)**: [**`KuroCat-v5.2.1-macos-universal.dmg`**](https://github.com/FEFKNCQ/Desktop-Cat-DIY/releases/download/v5.2.1/KuroCat-v5.2.1-macos-universal.dmg) (5.93 MB) | [**Fast Mirror**](https://qianyi.one/kurocat/releases/v5.2.1/KuroCat-v5.2.1-macos-universal.dmg)
+- **🍎 macOS 10.15 Catalina+ (Apple Silicon M1–M4 & Intel Universal · `v5.2.2`)**: [**`KuroCat-v5.2.2-macos-universal.dmg`**](https://github.com/FEFKNCQ/Desktop-Cat-DIY/releases/download/v5.2.2/KuroCat-v5.2.2-macos-universal.dmg) (5.93 MB) | [**Fast Mirror**](https://qianyi.one/kurocat/releases/v5.2.2/KuroCat-v5.2.2-macos-universal.dmg)
   - Open `.dmg` and drag `KuroCat.app` into **Applications**. Includes 3D/2D switcher, 65%/108-key layouts, and all 7 skins.
   - **First Launch (unsigned open-source app)**: If Gatekeeper warns "cannot be verified" or "damaged", run `xattr -cr /Applications/KuroCat.app` once in Terminal (future in-app updates handle this automatically).
   - **Input Permissions**: Enable `KuroCat` in **System Settings → Privacy & Security → Accessibility** and **Input Monitoring** (takes effect immediately; compatible with Karabiner-Elements).
   - **macOS Stdio MCP Path**: `/Applications/KuroCat.app/Contents/MacOS/KuroCat` with args `["--mcp"]`, or connect to `http://127.0.0.1:27420/mcp` while running.
-- **🐧 Linux / Ubuntu 22.04+ / Debian 12+ / KylinOS V11+ / UOS (`v5.2.1`)**:
-  - **x86_64**: [**`.deb` (2.38 MB)**](https://github.com/FEFKNCQ/Desktop-Cat-DIY/releases/download/v5.2.1/KuroCat-v5.2.1-linux-amd64.deb) · [**`.AppImage` (77.52 MB)**](https://github.com/FEFKNCQ/Desktop-Cat-DIY/releases/download/v5.2.1/KuroCat-v5.2.1-linux-amd64.AppImage)
-  - **ARM64**: [**`.deb` (2.34 MB)**](https://github.com/FEFKNCQ/Desktop-Cat-DIY/releases/download/v5.2.1/KuroCat-v5.2.1-linux-arm64.deb) · [**`.AppImage` (75.69 MB)**](https://github.com/FEFKNCQ/Desktop-Cat-DIY/releases/download/v5.2.1/KuroCat-v5.2.1-linux-arm64.AppImage)
+- **🐧 Linux / Ubuntu 22.04+ / Debian 12+ / KylinOS V11+ / UOS (`v5.2.2`)**:
+  - **x86_64**: [**`.deb` (2.38 MB)**](https://github.com/FEFKNCQ/Desktop-Cat-DIY/releases/download/v5.2.2/KuroCat-v5.2.2-linux-amd64.deb) · [**`.AppImage` (77.52 MB)**](https://github.com/FEFKNCQ/Desktop-Cat-DIY/releases/download/v5.2.2/KuroCat-v5.2.2-linux-amd64.AppImage)
+  - **ARM64**: [**`.deb` (2.34 MB)**](https://github.com/FEFKNCQ/Desktop-Cat-DIY/releases/download/v5.2.2/KuroCat-v5.2.2-linux-arm64.deb) · [**`.AppImage` (75.69 MB)**](https://github.com/FEFKNCQ/Desktop-Cat-DIY/releases/download/v5.2.2/KuroCat-v5.2.2-linux-arm64.AppImage)
   - **Requirements**: Built on Tauri v2 / Ubuntu 22.04 baseline; requires **`glibc >= 2.34`** (`.deb` requires **`libwebkit2gtk-4.1-0`** and **`libayatana-appindicator3-1`**; not compatible with Ubuntu 20.04 / `glibc 2.31` systems such as KylinOS V10 SP1).
   - Dynamically loads X11 `XRecord` for rootless global input (with automatic `evdev` fallback on Wayland). Fast mirrors available at [`https://qianyi.one/kurocat/?lang=en#linux-download`](https://qianyi.one/kurocat/?lang=en#linux-download).
 
