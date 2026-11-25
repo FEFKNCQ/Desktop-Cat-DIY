@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
+import http from 'node:http';
+import https from 'node:https';
 import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
@@ -15,6 +17,7 @@ function parseArgs(argv) {
     install: true,
     checkOnly: false,
     waitOnly: false,
+    verifyTool: true,
     port: null,
     host: '127.0.0.1',
     timeoutSeconds: 180
@@ -27,6 +30,7 @@ function parseArgs(argv) {
     else if (arg === '--no-install') result.install = false;
     else if (arg === '--check-only') result.checkOnly = true;
     else if (arg === '--wait-only') result.waitOnly = true;
+    else if (arg === '--no-verify-tool') result.verifyTool = false;
     else if (arg === '--port') result.port = Number(argv[++i]) || null;
     else if (arg === '--host') result.host = argv[++i] || '127.0.0.1';
     else if (arg === '--timeout') result.timeoutSeconds = Number(argv[++i]) || 180;
@@ -127,6 +131,61 @@ async function waitForPort(port, host, timeoutSeconds) {
   return false;
 }
 
+function callJsonRpc(url, method, params = {}) {
+  return new Promise((resolve, reject) => {
+    let target;
+    try {
+      target = new URL(url);
+    } catch (error) {
+      reject(new Error(`MCP URL 无效：${error.message}`));
+      return;
+    }
+    const transport = target.protocol === 'https:' ? https : http;
+    const body = JSON.stringify({ jsonrpc: '2.0', id: Date.now(), method, params });
+    const req = transport.request(
+      {
+        hostname: target.hostname,
+        port: target.port || (target.protocol === 'https:' ? 443 : 80),
+        path: target.pathname,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(body),
+          Accept: 'application/json, text/event-stream'
+        }
+      },
+      (res) => {
+        let raw = '';
+        res.setEncoding('utf8');
+        res.on('data', (chunk) => { raw += chunk; });
+        res.on('end', () => {
+          try {
+            resolve(JSON.parse(raw));
+          } catch (error) {
+            reject(new Error(`MCP tools/list 返回不是 JSON：${raw.slice(0, 200)}`));
+          }
+        });
+      }
+    );
+    req.on('error', reject);
+    req.write(body);
+    req.end();
+  });
+}
+
+async function assertImportTool(url) {
+  const response = await callJsonRpc(url, 'tools/list');
+  if (response?.error) {
+    throw new Error(`MCP tools/list 失败：${response.error.message}`);
+  }
+  const tools = response?.result?.tools || [];
+  const names = tools.map((tool) => tool?.name).filter(Boolean);
+  if (!names.includes('import_image_cat')) {
+    throw new Error(`当前 MCP 缺少 import_image_cat（工具：${names.join(', ') || '无'}）。请关闭/卸载旧版 KuroCat，改用 v5.2.0+ 安装包或从 main 源码启动。`);
+  }
+  return names;
+}
+
 function startDev(nodeExecutable, project) {
   const npm = npmInvocation(nodeExecutable, ['run', 'tauri:dev']);
   const logPath = path.join(os.tmpdir(), 'kurocat-tauri-dev.log');
@@ -174,6 +233,7 @@ async function main() {
   if (args.waitOnly) {
     const ok = await waitForPort(port, args.host, args.timeoutSeconds);
     if (!ok) throw new Error(`MCP 端口 ${port} 在 ${args.timeoutSeconds}s 内未就绪。请确认 KuroCat 已启动并勾选“开启 MCP 扩展”。`);
+    if (args.verifyTool) await assertImportTool(url);
     console.log(`MCP 已就绪：${url}`);
     return;
   }
@@ -194,6 +254,7 @@ async function main() {
 
   if (args.start) {
     if (await isPortOpen(port, args.host)) {
+      if (args.verifyTool) await assertImportTool(url);
       console.log(`MCP 已运行：${url}`);
       return;
     }
@@ -203,6 +264,7 @@ async function main() {
     if (!ok) {
       throw new Error(`KuroCat 已启动但 MCP 端口 ${port} 未就绪。请在托盘确认“开启 MCP 扩展”，或查看日志：${logPath}`);
     }
+    if (args.verifyTool) await assertImportTool(url);
     console.log(`MCP 已就绪：${url}`);
     return;
   }
