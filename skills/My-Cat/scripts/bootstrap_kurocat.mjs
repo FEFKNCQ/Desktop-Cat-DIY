@@ -180,8 +180,8 @@ async function assertImportTool(url) {
   }
   const tools = response?.result?.tools || [];
   const names = tools.map((tool) => tool?.name).filter(Boolean);
-  if (!names.includes('import_image_cat')) {
-    throw new Error(`当前 MCP 缺少 import_image_cat（工具：${names.join(', ') || '无'}）。请关闭/卸载旧版 KuroCat，改用 v5.2.5+ 安装包或从 main 源码启动。`);
+  if (!names.includes('import_image_cat') && !names.includes('import_image_pet')) {
+    throw new Error(`当前 MCP 缺少图片导入工具（工具：${names.join(', ') || '无'}）。请关闭/卸载旧版 KuroCat，改用 v5.2.6+ 安装包或从 main 源码启动。`);
   }
   return names;
 }

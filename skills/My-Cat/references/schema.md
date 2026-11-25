@@ -90,7 +90,9 @@ KuroCat 支持两种皮肤：
 
 ---
 
-## 路线 B：图片猫
+## 路线 B：图片桌宠（任意动物）
+
+**不要猫化**：图片里是什么动物就做什么动物。
 
 ### 图片硬约束
 
@@ -100,7 +102,7 @@ KuroCat 支持两种皮肤：
 | 格式 | **8-bit RGB 或 RGBA PNG** |
 | 背景 | 推荐透明背景 |
 | 大小 | 单张 ≤ 12 MB |
-| 内容 | 只含猫主体，无背景/文字/水印 |
+| 内容 | 只含参考动物主体，无背景/文字/水印 |
 | 存储 | 复制到 `<app_data>/cat-images/<id>/` |
 | 渲染 | 仅 2D Canvas，3D 不可用 |
 
@@ -123,6 +125,12 @@ KuroCat 支持两种皮肤：
 {
   "id": "my-photo-cat",
   "name": "我家猫（照片皮肤）",
+  "pet": {
+    "petType": "cat",
+    "motionProfile": "cat",
+    "tailMode": "cat",
+    "pawMode": "vector"
+  },
   "images": {
     "idle": "C:\\path\\to\\my-cat-idle.png",
     "blink": "C:\\path\\to\\my-cat-blink.png",
@@ -140,6 +148,15 @@ KuroCat 支持两种皮肤：
 ```
 
 `anchors` 全部可选，均为原图 0..1 归一化坐标。`headBox` 决定歪头形变中心，`leftPawBox` / `rightPawBox` 用于从图片裁出真实爪子贴到鼠标/键盘，`tailAnchor` 决定叠加尾巴根部。
+
+`pet` 全部可选，默认兼容猫：
+
+- `petType`：`cat` / `dog` / `rabbit` / `bird` / `fish` / `other`
+- `motionProfile`：`cat` / `dog` / `generic` / `none`
+- `tailMode`：`cat` / `wag` / `none` / `image`
+- `pawMode`：`vector` / `crop` / `none`
+
+非猫动物不要填 cat；鸟/鱼等无爪无尾动物应使用 `tailMode: "none"`、`pawMode: "none"`。
 
 ### MCP 工具
 

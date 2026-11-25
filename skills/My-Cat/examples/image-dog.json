@@ -1,0 +1,31 @@
+{
+  "id": "my-photo-dog",
+  "name": "我家狗（照片皮肤）",
+  "pet": {
+    "petType": "dog",
+    "motionProfile": "dog",
+    "tailMode": "wag",
+    "pawMode": "crop"
+  },
+  "colors": {
+    "furColor": "#d8a45c",
+    "pawColor": "#f3e6d2",
+    "tailColor": "#c98f45",
+    "outlineColor": "#5a3b24",
+    "accentColor": "#ffcf6b"
+  },
+  "images": {
+    "idle": "C:\\path\\to\\my-dog-idle.png",
+    "blink": "C:\\path\\to\\my-dog-blink.png",
+    "happy": "C:\\path\\to\\my-dog-happy.png",
+    "angry": "C:\\path\\to\\my-dog-angry.png",
+    "curious": "C:\\path\\to\\my-dog-curious.png"
+  },
+  "anchors": {
+    "headBox": { "x": 0.26, "y": 0.08, "w": 0.48, "h": 0.34 },
+    "leftPawBox": { "x": 0.16, "y": 0.62, "w": 0.26, "h": 0.18 },
+    "rightPawBox": { "x": 0.58, "y": 0.62, "w": 0.26, "h": 0.18 },
+    "tailAnchor": { "x": 0.84, "y": 0.66 }
+  },
+  "activate": true
+}

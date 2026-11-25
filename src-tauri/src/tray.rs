@@ -82,7 +82,7 @@ pub fn setup_tray(app: &AppHandle, initial: &AppSettings) -> tauri::Result<()> {
     let display_menu = crate::windows_display::create_menu(app)?;
     #[cfg(target_os = "macos")]
     let display_menu = crate::macos_window::create_display_menu(app)?;
-    let toggle_show = MenuItem::with_id(app, "toggle_show", "显示 / 隐藏小黑猫", true, None::<&str>)?;
+    let toggle_show = MenuItem::with_id(app, "toggle_show", "显示 / 隐藏桌宠", true, None::<&str>)?;
     let pause_guard = CheckMenuItem::with_id(
         app,
         "pause_guard",

@@ -265,6 +265,10 @@ export class KuroCatEngine {
   private imageSkinLeftPawBox: CatImageBox | null = null;
   private imageSkinRightPawBox: CatImageBox | null = null;
   private imageSkinTailAnchor: CatImagePoint | null = null;
+  private imagePetType = 'cat';
+  private imageMotionProfile: 'cat' | 'dog' | 'generic' | 'none' = 'cat';
+  private imageTailMode: 'cat' | 'wag' | 'none' | 'image' = 'cat';
+  private imagePawMode: 'vector' | 'crop' | 'none' = 'vector';
   private lastImageSkinRect: { x: number; y: number; w: number; h: number } | null = null;
   private catTail = {
     heldVks: new Set<number>(),
@@ -606,6 +610,16 @@ export class KuroCatEngine {
       this.imageSkinLeftPawBox = skin.imageSkin?.leftPawBox ?? null;
       this.imageSkinRightPawBox = skin.imageSkin?.rightPawBox ?? null;
       this.imageSkinTailAnchor = skin.imageSkin?.tailAnchor ?? null;
+      const petType = skin.imageSkin?.petType || 'cat';
+      this.imagePetType = petType;
+      const defaultMotion =
+        petType === 'cat' ? 'cat' : petType === 'dog' ? 'dog' : petType === 'bird' || petType === 'fish' ? 'none' : 'generic';
+      const defaultTail = petType === 'cat' ? 'cat' : petType === 'dog' ? 'wag' : 'none';
+      const defaultPaw =
+        petType === 'cat' ? 'vector' : petType === 'dog' || petType === 'rabbit' ? 'crop' : 'none';
+      this.imageMotionProfile = (skin.imageSkin?.motionProfile || defaultMotion) as typeof this.imageMotionProfile;
+      this.imageTailMode = (skin.imageSkin?.tailMode || defaultTail) as typeof this.imageTailMode;
+      this.imagePawMode = (skin.imageSkin?.pawMode || defaultPaw) as typeof this.imagePawMode;
       catAudio.setPurrIntensity(0);
       if (this.imageSkinId !== skin.id || this.imageSkinSignature !== signature) {
         this.imageSkinId = skin.id;
@@ -642,6 +656,10 @@ export class KuroCatEngine {
     this.imageSkinLeftPawBox = null;
     this.imageSkinRightPawBox = null;
     this.imageSkinTailAnchor = null;
+    this.imagePetType = 'cat';
+    this.imageMotionProfile = 'cat';
+    this.imageTailMode = 'cat';
+    this.imagePawMode = 'vector';
     this.lastImageSkinRect = null;
     this.imageSkinLoadVersion += 1;
   }
@@ -761,23 +779,38 @@ export class KuroCatEngine {
     if (!rect) return false;
     this.lastImageSkinRect = rect;
 
-    // Mirror the default black-cat state machine on top of a static image: typing adds a
-    // subtle groove, curiosity enlarges/tilts, anger jitters, sleep sinks, purr keeps micro motion.
+    // Motion profile keeps cat behavior only for cats. Dogs get gentle happy wag bounce;
+    // generic animals get subtle breathing; "none" keeps the image completely still.
+    const profile = this.imageMotionProfile;
+    const factor = profile === 'cat' ? 1 : profile === 'dog' ? 0.55 : profile === 'generic' ? 0.25 : 0;
     const typingLift = this.typingEnergy * 0.014;
     const curiousLift = this.curiousAmount * 0.018;
     const sleepSink = this.sleepAmount * 0.018;
-    const scaleBoost = 1 + breath * 0.006 + purrShift * 0.002 + typingLift + curiousLift - sleepSink;
+    const scaleBoost =
+      factor === 0
+        ? 1
+        : 1 + factor * (breath * 0.006 + purrShift * 0.002 + typingLift + curiousLift - sleepSink);
     const drawW = rect.w;
     const drawH = rect.h;
 
-    const angryJitter = this.crossAmount > 0.05 ? Math.sin(this.elapsed * 21) * this.crossAmount : 0;
-    const curiousTilt = this.curiousAmount * Math.sin(this.elapsed * 4.6) * 0.012;
-    const tilt = Math.max(
-      -0.09,
-      Math.min(0.09, this.headTilt * 0.16 + this.typingSway * 0.014 + angryJitter * 0.018 + curiousTilt),
-    );
-    const offsetX = purrShift * 0.3 + this.typingSway * 1.6 + angryJitter * 1.4;
-    const offsetY = this.typingHunch * 2.2 + this.sleepAmount * 3.2;
+    const angryJitter =
+      profile === 'cat' && this.crossAmount > 0.05 ? Math.sin(this.elapsed * 21) * this.crossAmount : 0;
+    const curiousTilt = factor > 0 ? this.curiousAmount * Math.sin(this.elapsed * 4.6) * 0.012 : 0;
+    const dogBounce =
+      profile === 'dog'
+        ? Math.abs(Math.sin(this.elapsed * 9)) * (this.typingEnergy * 0.9 + (this.squintAmount > 0.3 ? 1.2 : 0))
+        : 0;
+    const tilt =
+      factor === 0
+        ? 0
+        : Math.max(
+            -0.09,
+            Math.min(0.09, factor * (this.headTilt * 0.16 + this.typingSway * 0.014 + angryJitter * 0.018 + curiousTilt)),
+          );
+    const offsetX =
+      factor === 0 ? 0 : factor * (purrShift * 0.3 + this.typingSway * 1.6 + angryJitter * 1.4);
+    const offsetY =
+      factor === 0 ? 0 : factor * (this.typingHunch * 2.2 + this.sleepAmount * 3.2) + dogBounce;
 
     let originX = rect.x + drawW / 2 + offsetX;
     let originY = rect.y + drawH / 2 + offsetY;
@@ -2477,10 +2510,16 @@ export class KuroCatEngine {
     if (imageReady) {
       this.drawMiniMouse(ctx);
       this.drawKeyboard(ctx);
-      this.drawTail(ctx);
+      if (this.imageTailMode === 'wag') {
+        this.drawDogWagTail(ctx);
+      } else if (this.imageTailMode === 'cat') {
+        this.drawTail(ctx);
+      }
       this.drawImageSkin(ctx, breath, purrShift);
-      this.drawPaw(ctx, this.leftPaw, breath);
-      this.drawPaw(ctx, this.rightPaw, breath);
+      if (this.imagePawMode !== 'none') {
+        this.drawPaw(ctx, this.leftPaw, breath);
+        this.drawPaw(ctx, this.rightPaw, breath);
+      }
       this.drawCatAliveFx(ctx, performance.now(), breath);
       if (this.showKeyBubbles && !this.privacyMode) {
         this.drawKeyBubbles(ctx);
@@ -2636,6 +2675,44 @@ export class KuroCatEngine {
       }
       ctx.restore();
     }
+  }
+
+  private drawDogWagTail(ctx: CanvasRenderingContext2D): void {
+    const skin = this.customSkin;
+    let rootX = this.catCenterX + 58;
+    let rootY = this.catBaseY - 20 + this.sleepAmount * 12;
+    if (this.imageSkinTailAnchor) {
+      const img = this.pickImageSkinImage();
+      const rect = img ? this.getImageSkinBaseRect(img) : null;
+      if (rect) {
+        const anchor = this.mapImagePoint(this.imageSkinTailAnchor, rect);
+        rootX = anchor.x;
+        rootY = anchor.y + this.sleepAmount * 10;
+      }
+    }
+    const happy = this.squintAmount > 0.3 || this.bubbles.length > 0;
+    const wagSpeed = happy ? 15 : this.typingEnergy > 0.2 ? 11 : 6.5;
+    const wagAmp = (happy ? 16 : 9) + this.typingEnergy * 7 + this.curiousAmount * 5;
+    const wag = Math.sin(this.elapsed * wagSpeed) * wagAmp;
+    const tipX = rootX + 30 + wag;
+    const tipY = rootY - 38 - (this.crossAmount > 0.3 ? 7 : 0) + this.sleepAmount * 12;
+
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = skin?.tailColor || '#c8a06a';
+    ctx.lineWidth = 12;
+    ctx.beginPath();
+    ctx.moveTo(rootX, rootY);
+    ctx.quadraticCurveTo(rootX + 18, rootY - 16, tipX, tipY);
+    ctx.stroke();
+    ctx.strokeStyle = skin?.tailTipColor || skin?.tailColor || '#e7d9c6';
+    ctx.lineWidth = 8;
+    ctx.beginPath();
+    ctx.moveTo(rootX + 20 + wag * 0.45, rootY - 24);
+    ctx.quadraticCurveTo(rootX + 28 + wag * 0.8, tipY + 8, tipX, tipY);
+    ctx.stroke();
+    ctx.restore();
   }
 
   private drawTail(ctx: CanvasRenderingContext2D): void {
@@ -4379,9 +4456,10 @@ export class KuroCatEngine {
 
   private drawPaw(ctx: CanvasRenderingContext2D, paw: PawState, breath: number): void {
     const imageIdleArm = Boolean(this.imageSkinId && paw.mode === 'idle');
-    if (this.imageSkinId) {
+    if (this.imageSkinId && this.imagePawMode === 'crop') {
       const pawBox = paw.side === 'left' ? this.imageSkinLeftPawBox : this.imageSkinRightPawBox;
       if (pawBox && this.drawCroppedImagePaw(ctx, pawBox, paw.pos.x, paw.pos.y)) return;
+      return;
     }
 
     // 1) Seated idle vertical front legs (EXACT 4 clean lines of ORIG 0.3s!) OR planted diagonal supporting leg (ORIG 2.2s!)

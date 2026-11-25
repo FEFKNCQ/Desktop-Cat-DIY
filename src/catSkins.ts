@@ -34,6 +34,10 @@ export interface CatImageSkin {
   leftPawBox?: CatImageBox;
   rightPawBox?: CatImageBox;
   tailAnchor?: CatImagePoint;
+  petType?: 'cat' | 'dog' | 'rabbit' | 'bird' | 'fish' | 'other';
+  motionProfile?: 'cat' | 'dog' | 'generic' | 'none';
+  tailMode?: 'cat' | 'wag' | 'none' | 'image';
+  pawMode?: 'vector' | 'crop' | 'none';
   width?: number;
   height?: number;
 }

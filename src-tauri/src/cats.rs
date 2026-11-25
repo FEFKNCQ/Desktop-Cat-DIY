@@ -81,6 +81,18 @@ pub struct CatImageSkin {
     pub right_paw_box: Option<CatImageBox>,
     #[serde(default)]
     pub tail_anchor: Option<CatImagePoint>,
+    /// Species hint: cat | dog | rabbit | bird | fish | other. Never force-cat.
+    #[serde(default)]
+    pub pet_type: Option<String>,
+    /// Animation profile: cat | dog | generic | none.
+    #[serde(default)]
+    pub motion_profile: Option<String>,
+    /// Tail overlay: cat | wag | none | image.
+    #[serde(default)]
+    pub tail_mode: Option<String>,
+    /// Paw overlay: vector | crop | none.
+    #[serde(default)]
+    pub paw_mode: Option<String>,
     #[serde(default = "default_image_width")]
     pub width: u32,
     #[serde(default = "default_image_height")]
@@ -330,6 +342,7 @@ pub fn import_image_cat_files(
     images: &serde_json::Value,
     colors: &serde_json::Value,
     anchors: &serde_json::Value,
+    pet: &serde_json::Value,
 ) -> Result<CatSkinConfig, String> {
     use std::collections::BTreeMap;
 
@@ -376,6 +389,43 @@ pub fn import_image_cat_files(
         asset_names.insert(expr, filename);
     }
 
+    let string_arg = |key: &str, default: &str| -> String {
+        pet.get(key)
+            .and_then(|v| v.as_str())
+            .filter(|s| !s.trim().is_empty())
+            .unwrap_or(default)
+            .trim()
+            .to_string()
+    };
+    let pet_type = string_arg("petType", "cat").to_lowercase();
+    let derived_motion = match pet_type.as_str() {
+        "cat" => "cat",
+        "dog" => "dog",
+        "bird" | "fish" => "none",
+        _ => "generic",
+    };
+    let derived_tail = match pet_type.as_str() {
+        "cat" => "cat",
+        "dog" => "wag",
+        _ => "none",
+    };
+    let derived_paw = match pet_type.as_str() {
+        "cat" => "vector",
+        "dog" | "rabbit" => "crop",
+        _ => "none",
+    };
+    let motion_profile = string_arg("motionProfile", derived_motion).to_lowercase();
+    let tail_mode = string_arg("tailMode", derived_tail).to_lowercase();
+    let paw_mode = string_arg("pawMode", derived_paw).to_lowercase();
+    let emoji = match pet_type.as_str() {
+        "dog" => "🐕",
+        "rabbit" => "🐇",
+        "bird" => "🐦",
+        "fish" => "🐟",
+        "other" => "🐾",
+        _ => "🐈",
+    };
+
     let image_skin = serde_json::json!({
         "idle": asset_names.get("idle").unwrap(),
         "blink": asset_names.get("blink"),
@@ -387,6 +437,10 @@ pub fn import_image_cat_files(
         "leftPawBox": anchors.get("leftPawBox").cloned().unwrap_or(serde_json::Value::Null),
         "rightPawBox": anchors.get("rightPawBox").cloned().unwrap_or(serde_json::Value::Null),
         "tailAnchor": anchors.get("tailAnchor").cloned().unwrap_or(serde_json::Value::Null),
+        "petType": pet_type.clone(),
+        "motionProfile": motion_profile,
+        "tailMode": tail_mode,
+        "pawMode": paw_mode,
         "width": default_image_width(),
         "height": default_image_height()
     });
@@ -411,7 +465,7 @@ pub fn import_image_cat_files(
         "accentColor": color("accentColor", "#c8f538"),
         "accentSideColor": color("accentSideColor", "#8cb014"),
         "pattern": "solid",
-        "emoji": "🐈"
+        "emoji": emoji
     });
     if let Some(value) = colors.get("noseColor").and_then(|v| v.as_str()) {
         cat_json["noseColor"] = serde_json::Value::String(value.to_string());
@@ -865,7 +919,7 @@ pub fn cat_exists(id: &str) -> bool {
 
 pub fn cat_schema_guide() -> serde_json::Value {
     serde_json::json!({
-        "description": "KuroCat Custom Cat Skin Schema. Pass any custom cat JSON to upsert_cat (with activate: true) to immediately add and render it live. For a real photo/generated image skin, call import_image_cat with local PNG paths instead; images must be 224x278 8-bit RGB/RGBA PNG with transparent background.",
+        "description": "KuroCat Custom Desktop Pet Schema. Parameter-based skins are cat-oriented (upsert_cat/upsert_pet). For any real animal (dog, rabbit, bird, fish, other), use import_image_pet / import_image_cat with 224x278 8-bit RGB/RGBA PNG images and a pet object. What the reference image is stays what the desktop pet is; never force-cat an animal.",
         "imageSkin": {
             "tool": "import_image_cat",
             "requiredImages": ["idle"],
@@ -874,7 +928,8 @@ pub fn cat_schema_guide() -> serde_json::Value {
             "format": "8-bit RGB/RGBA PNG, transparent background recommended",
             "config": "kind: 'image', imageSkin: { idle: 'idle.png', blink: 'blink.png', shy: 'shy.png', happy: 'happy.png', angry: 'angry.png', curious: 'curious.png', width: 224, height: 278 }",
             "anchors": "Optional normalized 0..1 boxes/points in imageSkin: headBox {x,y,w,h}, leftPawBox {x,y,w,h}, rightPawBox {x,y,w,h}, tailAnchor {x,y}. Paw boxes are cropped and placed on mouse/keyboard; tailAnchor moves the vector tail root.",
-            "note": "Image skins force 2D Canvas rendering; 3D mode is unavailable for them. delete_cat removes the stored images."
+            "pet": "pet: { petType, motionProfile, tailMode, pawMode }. Defaults preserve legacy cat behavior. For non-cat animals set petType to dog/rabbit/bird/fish/other; cat tail/paws are disabled or adapted automatically.",
+            "note": "Image skins force 2D Canvas rendering; 3D mode is unavailable for them. delete_cat / delete_pet removes the stored images."
         },
         "patterns": {
             "solid": "Single coat color (e.g., British Shorthair blue, white Persian, golden chinchilla, black cat)",

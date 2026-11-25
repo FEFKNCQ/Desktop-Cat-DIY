@@ -1,6 +1,6 @@
 # AGENTS.md — Desktop-Cat-DIY
 
-给所有 Agent 的简短执行约定。用户无需了解项目细节，只要上传猫咪照片/卡通图，并要求“做成 Desktop-Cat-DIY / KuroCat 桌宠”时，按本文件执行。
+给所有 Agent 的简短执行约定。用户无需了解项目细节，只要上传动物参考图（猫、狗、兔子、鸟、鱼、其他动物或卡通动物），并要求“做成 Desktop-Cat-DIY / KuroCat 桌宠”时，按本文件执行。**是什么动物就做什么动物，不要猫化。**
 
 ## 必读 Skill
 
@@ -30,38 +30,43 @@ https://github.com/FEFKNCQ/Desktop-Cat-DIY
 
 - 用户必须提供**至少一张参考图片**（照片、截图、卡通图均可）
 - **不要询问用户图片是实拍还是卡通**，也不要因此停下
+- **不要猫化**：狗就是狗，兔子就是兔子，其他动物同理
 - 默认按“尽量还原参考图”执行，优先图片皮肤路线
 
 ## 标准流程
 
 1. 读取 `skills/My-Cat/SKILL.md`
-2. 安装/启动（必须从 main 源码构建，或使用 v5.2.5+ 安装包；**v5.1.0 旧包的 MCP 没有 `import_image_cat`**）：
+2. 安装/启动（必须从 main 源码构建，或使用 v5.2.6+ 安装包；**v5.1.0 旧包的 MCP 没有图片导入工具**）：
    ```bash
    npm run cat:bootstrap -- --check-only
    npm run cat:bootstrap -- --start
    ```
-   如果用户已经安装了旧包，先卸载/关闭旧 KuroCat，再用 main 源码启动，或改用 v5.2.5+ 安装包。
+   如果用户已经安装了旧包，先卸载/关闭旧 KuroCat，再用 main 源码启动，或改用 v5.2.6+ 安装包。
 3. 如果 MCP 端口未就绪，提示用户在托盘勾选「开启 MCP 扩展」，不要反复重启
 4. 检查参考图片：
    - 没有图片：请用户至少上传一张，不继续安装/导入
    - 有至少一张：不要追问“实拍还是卡通”，默认尽量还原参考图
-   - 优先图片皮肤路线；只有用户明确要求参数化/卡通时才走路线 A
+   - 识别图片里的动物种类；不要强制按猫处理
+   - 优先图片皮肤路线；只有参考图是猫且用户明确要求参数化/卡通时才走路线 A
 5. 图片皮肤路线：
    - 生成或处理为 **224×278、8-bit RGB/RGBA PNG、透明背景**
-   - 至少生成 `idle`，可选 `blink` / `shy` / `happy`
-   - 写 `image-cat.json`
+   - 生图提示词必须写明“不要猫化，是什么动物就做什么动物”
+   - 至少生成 `idle`，可选 `blink` / `shy` / `happy` / `angry` / `curious`
+   - 根据动物填写 `pet.petType` / `motionProfile` / `tailMode` / `pawMode`；狗用 `dog/wag/crop`，鸟鱼等用 `generic/none/none`
+   - 写 `image-cat.json` 或 `image-dog.json`
    - `npm run cat:import-image -- image-cat.json`
-6. 参数化路线：
+6. 参数化路线（仅猫）：
    - 生成 `CatSkinConfig` JSON
    - `npm run cat:validate -- cat.json`
    - `npm run cat:upsert -- cat.json`
-7. 调用 MCP `list_cats` 验证新 ID 与激活状态
+7. 调用 MCP `list_pets` / `list_cats` 验证新 ID 与激活状态
 8. 确认切换成功后向用户报告：桌宠名称、ID、使用路线、是否切换成功。系统托盘头像会由程序自动生成并切换，Agent 不需要额外调用图标命令；桌面快捷方式和 EXE 图标不会随运行时改变
 
 ## 约束
 
 - 参考图片至少一张；不足时只请求补充图片，不要询问“实拍还是卡通”
 - 默认按“尽量还原参考图”处理，不因为图片风格是实拍或卡通而改变流程
+- 不允许把非猫动物猫化；禁止添加参考图不存在的猫耳、猫尾、猫花纹
 - Agent 必须能操作本机并访问本地文件，否则只能给出命令，不能声称已安装/切换
 - 不要修改与本任务无关的仓库
 - 不要把图片 URL、base64 或临时路径写进 `cats.json`

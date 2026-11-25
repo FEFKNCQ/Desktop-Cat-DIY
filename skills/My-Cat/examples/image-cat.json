@@ -1,6 +1,12 @@
 {
   "id": "my-photo-cat",
   "name": "我家猫（照片皮肤）",
+  "pet": {
+    "petType": "cat",
+    "motionProfile": "cat",
+    "tailMode": "cat",
+    "pawMode": "vector"
+  },
   "colors": {
     "furColor": "#f2a452",
     "pawColor": "#fdf6e8",

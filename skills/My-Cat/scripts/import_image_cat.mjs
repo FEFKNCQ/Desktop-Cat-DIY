@@ -110,6 +110,25 @@ function validatePayload(payload, activateArg) {
       }
     }
   }
+  if (payload.pet !== undefined) {
+    if (!payload.pet || typeof payload.pet !== 'object' || Array.isArray(payload.pet)) {
+      errors.push('pet 必须是对象');
+    } else {
+      const allowedPet = new Set(['petType', 'motionProfile', 'tailMode', 'pawMode']);
+      const enums = {
+        petType: ['cat', 'dog', 'rabbit', 'bird', 'fish', 'other'],
+        motionProfile: ['cat', 'dog', 'generic', 'none'],
+        tailMode: ['cat', 'wag', 'none', 'image'],
+        pawMode: ['vector', 'crop', 'none']
+      };
+      for (const [key, value] of Object.entries(payload.pet)) {
+        if (!allowedPet.has(key)) errors.push(`pet.${key} 不支持`);
+        else if (typeof value !== 'string' || !enums[key].includes(value)) {
+          errors.push(`pet.${key} 必须是 ${enums[key].join(' / ')} 之一`);
+        }
+      }
+    }
+  }
   if (payload.colors !== undefined) {
     if (!payload.colors || typeof payload.colors !== 'object' || Array.isArray(payload.colors)) {
       errors.push('colors 必须是对象');
@@ -204,8 +223,16 @@ async function main() {
 
   const toolList = await rpc(args.url, 'tools/list');
   const toolNames = (toolList?.result?.tools || []).map((tool) => tool?.name).filter(Boolean);
-  if (!toolNames.includes('import_image_cat')) {
-    throw new Error(`当前 MCP 缺少 import_image_cat（工具：${toolNames.join(', ') || '无'}）。请关闭/卸载旧版 KuroCat，改用 v5.2.5+ 安装包或从 main 源码启动。`);
+  const prefersPetTool = payload.pet?.petType && payload.pet.petType !== 'cat';
+  const toolName = prefersPetTool && toolNames.includes('import_image_pet')
+    ? 'import_image_pet'
+    : toolNames.includes('import_image_cat')
+      ? 'import_image_cat'
+      : toolNames.includes('import_image_pet')
+        ? 'import_image_pet'
+        : null;
+  if (!toolName) {
+    throw new Error(`当前 MCP 缺少图片导入工具（工具：${toolNames.join(', ') || '无'}）。请关闭/卸载旧版 KuroCat，改用 v5.2.6+ 安装包或从 main 源码启动。`);
   }
 
   const argumentsPayload = {
@@ -214,11 +241,12 @@ async function main() {
     images: payload.images,
     colors: payload.colors || {},
     anchors: payload.anchors || {},
+    pet: payload.pet || {},
     activate: typeof payload.activate === 'boolean' ? payload.activate : args.activate
   };
 
   const response = await rpc(args.url, 'tools/call', {
-    name: 'import_image_cat',
+    name: toolName,
     arguments: argumentsPayload
   });
   const resultText = readResultText(response);

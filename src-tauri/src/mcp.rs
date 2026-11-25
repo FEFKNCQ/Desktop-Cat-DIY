@@ -161,10 +161,21 @@ fn tool_definitions() -> Value {
                         },
                         "additionalProperties": false
                     },
+                    "pet": {
+                        "type": "object",
+                        "description": "Species and motion settings. What the reference image is stays what the desktop pet is; cat behavior is never forced. Defaults preserve legacy cat behavior.",
+                        "properties": {
+                            "petType": { "type": "string", "enum": ["cat", "dog", "rabbit", "bird", "fish", "other"] },
+                            "motionProfile": { "type": "string", "enum": ["cat", "dog", "generic", "none"] },
+                            "tailMode": { "type": "string", "enum": ["cat", "wag", "none", "image"] },
+                            "pawMode": { "type": "string", "enum": ["vector", "crop", "none"] }
+                        },
+                        "additionalProperties": false
+                    },
                     "activate": {
                         "type": "boolean",
                         "default": true,
-                        "description": "Immediately switch the live desktop pet to this image cat."
+                        "description": "Immediately switch the live desktop pet to this image pet."
                     }
                 }
             }
@@ -189,6 +200,60 @@ fn tool_definitions() -> Value {
                 "properties": {
                     "id": { "type": "string", "description": "Custom cat ID to delete" }
                 }
+            }
+        },
+        {
+            "name": "get_pet_schema",
+            "description": "Species-neutral alias of get_cat_schema. Use this before creating any animal desktop pet; never force a cat skin onto dogs or other animals.",
+            "inputSchema": { "type": "object", "properties": {}, "additionalProperties": false }
+        },
+        {
+            "name": "list_pets",
+            "description": "Species-neutral alias of list_cats. Lists all available animal desktop pets and the active one.",
+            "inputSchema": { "type": "object", "properties": {}, "additionalProperties": false }
+        },
+        {
+            "name": "upsert_pet",
+            "description": "Species-neutral alias of upsert_cat. Use only for parameter-based pets; image skins should use import_image_pet.",
+            "inputSchema": {
+                "type": "object",
+                "required": ["cat"],
+                "properties": { "cat": { "type": "object" }, "activate": { "type": "boolean" } }
+            }
+        },
+        {
+            "name": "import_image_pet",
+            "description": "Species-neutral alias of import_image_cat. What the uploaded image is stays what the desktop pet is (dog stays dog, rabbit stays rabbit, etc.); no cat features are forced.",
+            "inputSchema": {
+                "type": "object",
+                "required": ["id", "name", "images"],
+                "properties": {
+                    "id": { "type": "string" },
+                    "name": { "type": "string" },
+                    "images": { "type": "object" },
+                    "colors": { "type": "object" },
+                    "anchors": { "type": "object" },
+                    "pet": { "type": "object" },
+                    "activate": { "type": "boolean" }
+                }
+            }
+        },
+        {
+            "name": "switch_pet",
+            "description": "Species-neutral alias of switch_cat. Switch the active desktop pet by ID.",
+            "inputSchema": {
+                "type": "object",
+                "required": ["id"],
+                "properties": { "id": { "type": "string" } }
+            }
+        },
+        {
+            "name": "delete_pet",
+            "description": "Species-neutral alias of delete_cat. Delete a custom animal desktop pet by ID.",
+            "inputSchema": {
+                "type": "object",
+                "required": ["id"],
+                "properties": { "id": { "type": "string" } }
             }
         },
         {
@@ -247,6 +312,12 @@ fn err_text(msg: &str) -> Value {
 
 fn execute_tool(name: &str, args: &Value, on_change: &dyn Fn()) -> Value {
     match name {
+        "get_pet_schema" => execute_tool("get_cat_schema", args, on_change),
+        "list_pets" => execute_tool("list_cats", args, on_change),
+        "upsert_pet" => execute_tool("upsert_cat", args, on_change),
+        "import_image_pet" => execute_tool("import_image_cat", args, on_change),
+        "switch_pet" => execute_tool("switch_cat", args, on_change),
+        "delete_pet" => execute_tool("delete_cat", args, on_change),
         "list_cats" => {
             let settings = load_settings();
             let cats = all_cats();
@@ -299,7 +370,8 @@ fn execute_tool(name: &str, args: &Value, on_change: &dyn Fn()) -> Value {
             };
             let colors = args.get("colors").cloned().unwrap_or_else(|| json!({}));
             let anchors = args.get("anchors").cloned().unwrap_or_else(|| json!({}));
-            match import_image_cat_files(id_raw, name_raw, images, &colors, &anchors) {
+            let pet = args.get("pet").cloned().unwrap_or_else(|| json!({}));
+            match import_image_cat_files(id_raw, name_raw, images, &colors, &anchors, &pet) {
                 Ok(saved) => {
                     let activate = args
                         .get("activate")
