@@ -59,7 +59,7 @@ https://github.com/FEFKNCQ/Desktop-Cat-DIY
 5. **图片皮肤只走 2D**  
    `import_image_cat` 会把 `renderMode` 改为 `2d`；3D shader 不支持用户图片。
 
-6. **切换后自动更新系统托盘头像**  
+6. **切换后自动更新系统托盘头像**
    程序会根据当前猫自动生成托盘头像：图片猫用 `idle.png` 居中裁剪，参数猫按配色和花纹绘制。Agent 不需要额外改桌面快捷方式或 EXE 图标；这两者在运行时无法可靠替换。
 
 ## 阶段 -1：安装、启动与 MCP 就绪（Agent 必须从这一步开始）
