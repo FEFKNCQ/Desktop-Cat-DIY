@@ -2269,8 +2269,25 @@ export class KuroCatEngine {
     if (paw.mode === 'curled') {
       paw.target = this.getLiveCurledPawPos(paw, 0);
     } else if (paw.mode === 'idle') {
-      const baseSp = this.spinePoint(1.0, 0);
-      paw.target = { x: baseSp.x + (paw.side === 'left' ? -19 : 19), y: baseSp.y };
+      if (this.imageSkinId) {
+        // Image skins already draw their own seated legs/paws. Keep the interactive overlay
+        // paws planted on the desk devices even at rest: left paw on the mouse, right paw
+        // on the keyboard, so the generated cat reads as actually using the computer.
+        if (paw.side === 'left') {
+          paw.target = {
+            x: liveMouseX + (this.keyboardOrientation === 'cat' ? 2 : 0),
+            y: liveMouseY - 10,
+          };
+        } else {
+          paw.target = this.clampToKeyboardSurface({
+            x: this.kbCenterX + this.kbWidth * 0.08,
+            y: this.kbCenterY - this.kbHeight * 0.12,
+          });
+        }
+      } else {
+        const baseSp = this.spinePoint(1.0, 0);
+        paw.target = { x: baseSp.x + (paw.side === 'left' ? -19 : 19), y: baseSp.y };
+      }
     }
 
     const wantIdle = paw.mode === 'idle' ? 1 : 0;
@@ -4235,8 +4252,10 @@ export class KuroCatEngine {
   }
 
   private drawPaw(ctx: CanvasRenderingContext2D, paw: PawState, breath: number): void {
+    const imageIdleArm = Boolean(this.imageSkinId && paw.mode === 'idle');
+
     // 1) Seated idle vertical front legs (EXACT 4 clean lines of ORIG 0.3s!) OR planted diagonal supporting leg (ORIG 2.2s!)
-    if (paw.idleWeight > 0.05) {
+    if (paw.idleWeight > 0.05 && !imageIdleArm) {
       ctx.save();
       ctx.globalAlpha = paw.idleWeight;
 
@@ -4309,12 +4328,14 @@ export class KuroCatEngine {
     }
 
     // 2) Continuous bent articulated curled chest arm (8.3s / 10.6s / 23.2s / 26.2s!)
-    if (paw.curlWeight > 0.05) {
+    if (paw.curlWeight > 0.05 && !imageIdleArm) {
       this.drawBentCurledArm(ctx, paw, breath, paw.curlWeight);
     }
 
     // 3) Plump velvety poking / mouse-holding cat arm!
-    const activeArmWeight = Math.max(0, 1 - paw.idleWeight - paw.curlWeight);
+    const activeArmWeight = imageIdleArm
+      ? Math.max(0.82, paw.idleWeight)
+      : Math.max(0, 1 - paw.idleWeight - paw.curlWeight);
     if (activeArmWeight > 0.05) {
       const sh = this.getLiveShoulder(paw, breath);
       const px = paw.pos.x;
@@ -4336,7 +4357,17 @@ export class KuroCatEngine {
       }
 
       // Keep mouse-reaching arm pure velvet black in open air (ORIG 2.2s); show subtle separation lines when poking across black torso!
-      this.drawPlumpCatArm(ctx, paw.side, sh.x, sh.y, px, py, paw.impactSquash, paw.mode !== 'mouse', false);
+      this.drawPlumpCatArm(
+        ctx,
+        paw.side,
+        sh.x,
+        sh.y,
+        px,
+        py,
+        paw.impactSquash,
+        !imageIdleArm && paw.mode !== 'mouse',
+        false,
+      );
       ctx.restore();
     }
   }

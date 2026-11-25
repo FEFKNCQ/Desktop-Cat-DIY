@@ -181,7 +181,7 @@ async function assertImportTool(url) {
   const tools = response?.result?.tools || [];
   const names = tools.map((tool) => tool?.name).filter(Boolean);
   if (!names.includes('import_image_cat')) {
-    throw new Error(`当前 MCP 缺少 import_image_cat（工具：${names.join(', ') || '无'}）。请关闭/卸载旧版 KuroCat，改用 v5.2.2+ 安装包或从 main 源码启动。`);
+    throw new Error(`当前 MCP 缺少 import_image_cat（工具：${names.join(', ') || '无'}）。请关闭/卸载旧版 KuroCat，改用 v5.2.3+ 安装包或从 main 源码启动。`);
   }
   return names;
 }
