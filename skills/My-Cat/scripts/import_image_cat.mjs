@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 import http from 'node:http';
+import zlib from 'node:zlib';
 
 const DEFAULT_URL = 'http://127.0.0.1:27420/mcp';
 const EXPECTED_W = 224;
@@ -20,6 +21,55 @@ function parseArgs(argv) {
   return result;
 }
 
+function paeth(a, b, c) {
+  const p = a + b - c;
+  const pa = Math.abs(p - a);
+  const pb = Math.abs(p - b);
+  const pc = Math.abs(p - c);
+  if (pa <= pb && pa <= pc) return a;
+  return pb <= pc ? b : c;
+}
+
+function readPngRgbaRows(buf, width, height) {
+  let offset = 8;
+  const idat = [];
+  while (offset + 8 <= buf.length) {
+    const length = buf.readUInt32BE(offset);
+    const type = buf.toString('ascii', offset + 4, offset + 8);
+    if (offset + 12 + length > buf.length) throw new Error('PNG chunk out of bounds');
+    if (type === 'IDAT') idat.push(buf.subarray(offset + 8, offset + 8 + length));
+    offset += 12 + length;
+    if (type === 'IEND') break;
+  }
+  if (!idat.length) throw new Error('PNG has no IDAT');
+  const raw = zlib.inflateSync(Buffer.concat(idat));
+  const stride = width * 4;
+  if (raw.length < height * (stride + 1)) throw new Error('PNG pixel data too short');
+
+  const rows = [];
+  let prev = Buffer.alloc(stride);
+  let pos = 0;
+  for (let y = 0; y < height; y += 1) {
+    const filter = raw[pos];
+    pos += 1;
+    const cur = Buffer.from(raw.subarray(pos, pos + stride));
+    pos += stride;
+    for (let x = 0; x < stride; x += 1) {
+      const left = x >= 4 ? cur[x - 4] : 0;
+      const up = prev[x];
+      const upLeft = x >= 4 ? prev[x - 4] : 0;
+      if (filter === 1) cur[x] = (cur[x] + left) & 0xff;
+      else if (filter === 2) cur[x] = (cur[x] + up) & 0xff;
+      else if (filter === 3) cur[x] = (cur[x] + Math.floor((left + up) / 2)) & 0xff;
+      else if (filter === 4) cur[x] = (cur[x] + paeth(left, up, upLeft)) & 0xff;
+      else if (filter !== 0) throw new Error(`Unsupported PNG filter ${filter}`);
+    }
+    rows.push(cur);
+    prev = cur;
+  }
+  return rows;
+}
+
 function validatePng(filePath, label) {
   if (typeof filePath !== 'string' || !filePath.trim()) {
     return `${label} 必须是本地 PNG 文件路径`;
@@ -28,12 +78,12 @@ function validatePng(filePath, label) {
   const stat = fs.statSync(filePath);
   if (!stat.isFile()) return `${label} 不是文件`;
   if (stat.size === 0 || stat.size > 12 * 1024 * 1024) return `${label} 大小必须在 1 字节到 12MB 之间`;
-  const fd = fs.openSync(filePath, 'r');
-  const buf = Buffer.alloc(29);
+
+  let buf;
   try {
-    fs.readSync(fd, buf, 0, buf.length, 0);
-  } finally {
-    fs.closeSync(fd);
+    buf = fs.readFileSync(filePath);
+  } catch (error) {
+    return `${label} 读取失败：${error.message}`;
   }
   if (!buf.subarray(0, 8).equals(PNG_SIGNATURE)) return `${label} 不是 PNG 文件`;
   if (buf.readUInt32BE(8) !== 13 || buf.toString('ascii', 12, 16) !== 'IHDR') {
@@ -46,8 +96,17 @@ function validatePng(filePath, label) {
   }
   const bitDepth = buf[24];
   const colorType = buf[25];
-  if (bitDepth !== 8 || (colorType !== 2 && colorType !== 6)) {
-    return `${label} 必须是 8-bit RGB 或 RGBA PNG`;
+  if (bitDepth !== 8 || colorType !== 6) {
+    return `${label} 必须是 8-bit RGBA PNG（带透明通道）；不接受 RGB 或不透明背景`;
+  }
+  try {
+    const rows = readPngRgbaRows(buf, width, height);
+    const alphaAt = (x, y) => rows[y][x * 4 + 3];
+    if (alphaAt(0, 0) !== 0 || alphaAt(width - 1, 0) !== 0 || alphaAt(0, height - 1) !== 0 || alphaAt(width - 1, height - 1) !== 0) {
+      return `${label} 背景必须透明：PNG 四角 alpha 必须为 0，禁止导入整张背景/风景图`;
+    }
+  } catch (error) {
+    return `${label} PNG alpha 校验失败：${error.message}`;
   }
   return null;
 }
@@ -232,7 +291,7 @@ async function main() {
         ? 'import_image_pet'
         : null;
   if (!toolName) {
-    throw new Error(`当前 MCP 缺少图片导入工具（工具：${toolNames.join(', ') || '无'}）。请关闭/卸载旧版 KuroCat，改用 v5.2.6+ 安装包或从 main 源码启动。`);
+    throw new Error(`当前 MCP 缺少图片导入工具（工具：${toolNames.join(', ') || '无'}）。请关闭/卸载旧版 KuroCat，改用 v5.2.7+ 安装包或从 main 源码启动。`);
   }
 
   const argumentsPayload = {

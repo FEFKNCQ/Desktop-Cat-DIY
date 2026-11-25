@@ -410,7 +410,7 @@ pub fn import_image_cat_files(
         _ => "none",
     };
     let derived_paw = match pet_type.as_str() {
-        "cat" => "vector",
+        "cat" => "crop",
         "dog" | "rabbit" => "crop",
         _ => "none",
     };
@@ -925,7 +925,7 @@ pub fn cat_schema_guide() -> serde_json::Value {
             "requiredImages": ["idle"],
             "optionalImages": ["blink", "shy", "happy", "angry", "curious"],
             "size": "224x278",
-            "format": "8-bit RGB/RGBA PNG, transparent background recommended",
+            "format": "8-bit RGBA PNG only, transparent background required (corner alpha 0)",
             "config": "kind: 'image', imageSkin: { idle: 'idle.png', blink: 'blink.png', shy: 'shy.png', happy: 'happy.png', angry: 'angry.png', curious: 'curious.png', width: 224, height: 278 }",
             "anchors": "Optional normalized 0..1 boxes/points in imageSkin: headBox {x,y,w,h}, leftPawBox {x,y,w,h}, rightPawBox {x,y,w,h}, tailAnchor {x,y}. Paw boxes are cropped and placed on mouse/keyboard; tailAnchor moves the vector tail root.",
             "pet": "pet: { petType, motionProfile, tailMode, pawMode }. Defaults preserve legacy cat behavior. For non-cat animals set petType to dog/rabbit/bird/fish/other; cat tail/paws are disabled or adapted automatically.",

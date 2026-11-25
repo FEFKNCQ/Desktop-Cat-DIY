@@ -112,7 +112,7 @@ fn tool_definitions() -> Value {
         },
         {
             "name": "import_image_cat",
-            "description": "Create or replace an image-based custom cat from local PNG files (224x278, 8-bit RGB/RGBA, transparent background recommended). Agent-generated pet images can be passed by file path; assets are copied into KuroCat app data and hot-reload immediately. Image skins render in 2D only.",
+            "description": "Create or replace an image-based custom pet from local PNG files (224x278, 8-bit RGBA only, transparent background required with corner alpha 0). Agent-generated animal images can be passed by file path; assets are copied into KuroCat app data and hot-reload immediately. Image skins render in 2D only.",
             "inputSchema": {
                 "type": "object",
                 "required": ["id", "name", "images"],

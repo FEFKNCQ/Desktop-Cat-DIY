@@ -5,7 +5,7 @@
     "petType": "cat",
     "motionProfile": "cat",
     "tailMode": "cat",
-    "pawMode": "vector"
+    "pawMode": "crop"
   },
   "colors": {
     "furColor": "#f2a452",

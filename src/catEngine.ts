@@ -615,11 +615,12 @@ export class KuroCatEngine {
       const defaultMotion =
         petType === 'cat' ? 'cat' : petType === 'dog' ? 'dog' : petType === 'bird' || petType === 'fish' ? 'none' : 'generic';
       const defaultTail = petType === 'cat' ? 'cat' : petType === 'dog' ? 'wag' : 'none';
-      const defaultPaw =
-        petType === 'cat' ? 'vector' : petType === 'dog' || petType === 'rabbit' ? 'crop' : 'none';
+      const defaultPaw = petType === 'cat' || petType === 'dog' || petType === 'rabbit' ? 'crop' : 'none';
       this.imageMotionProfile = (skin.imageSkin?.motionProfile || defaultMotion) as typeof this.imageMotionProfile;
       this.imageTailMode = (skin.imageSkin?.tailMode || defaultTail) as typeof this.imageTailMode;
-      this.imagePawMode = (skin.imageSkin?.pawMode || defaultPaw) as typeof this.imagePawMode;
+      const storedPaw = skin.imageSkin?.pawMode;
+      const hasPawBoxes = Boolean(skin.imageSkin?.leftPawBox || skin.imageSkin?.rightPawBox);
+      this.imagePawMode = (storedPaw === 'vector' && !hasPawBoxes ? 'crop' : storedPaw || defaultPaw) as typeof this.imagePawMode;
       catAudio.setPurrIntensity(0);
       if (this.imageSkinId !== skin.id || this.imageSkinSignature !== signature) {
         this.imageSkinId = skin.id;
@@ -4454,11 +4455,34 @@ export class KuroCatEngine {
     ctx.restore();
   }
 
+  private drawCompactImagePaw(ctx: CanvasRenderingContext2D, paw: PawState): void {
+    const skin = this.customSkin;
+    const fill = skin?.pawColor || '#f5efe6';
+    const outline = skin?.pawOutlineColor || skin?.outlineColor || 'rgba(80, 70, 60, 0.45)';
+    ctx.save();
+    ctx.globalAlpha = paw.mode === 'idle' ? 0.62 : 0.9;
+    ctx.fillStyle = fill;
+    ctx.strokeStyle = outline;
+    ctx.lineWidth = 1.1;
+    ctx.beginPath();
+    ctx.ellipse(paw.pos.x, paw.pos.y + 1.5, 10, 7.5, -0.08, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    for (const dx of [-5, 0, 5]) {
+      ctx.beginPath();
+      ctx.ellipse(paw.pos.x + dx, paw.pos.y - 5, 3.1, 3.8, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
   private drawPaw(ctx: CanvasRenderingContext2D, paw: PawState, breath: number): void {
     const imageIdleArm = Boolean(this.imageSkinId && paw.mode === 'idle');
     if (this.imageSkinId && this.imagePawMode === 'crop') {
       const pawBox = paw.side === 'left' ? this.imageSkinLeftPawBox : this.imageSkinRightPawBox;
       if (pawBox && this.drawCroppedImagePaw(ctx, pawBox, paw.pos.x, paw.pos.y)) return;
+      this.drawCompactImagePaw(ctx, paw);
       return;
     }
 
