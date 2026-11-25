@@ -165,8 +165,10 @@ export function resolveCustomSkin(raw: CatSkinConfig): ResolvedSkin {
     earTipColor: raw.earTipColor || null,
     earInnerColor: raw.earInnerColor || (darkBase ? null : '#efc4c8'),
     earTuftColor: raw.earTuftColor || null,
-    tailColor: raw.tailColor || raw.earOuterColor || raw.maskColor || fur,
-    tailTipColor: raw.tailTipColor || raw.earTipColor || raw.tailColor || fur,
+    tailColor:
+      raw.tailColor || raw.earOuterColor || raw.maskColor || (raw.kind === 'image' ? pawColor : fur),
+    tailTipColor:
+      raw.tailTipColor || raw.earTipColor || raw.tailColor || (raw.kind === 'image' ? pawColor : fur),
     tailFluffy: Boolean(raw.tailFluffy),
     tailStripes: Boolean(raw.tailStripes || pattern === 'tabby'),
     eyeColorTop: raw.eyeColorTop || '#5a94d6',

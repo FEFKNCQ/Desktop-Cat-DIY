@@ -655,11 +655,30 @@ export class KuroCatEngine {
       });
   }
 
+  private imageSkinBlinkValue(): number {
+    if (this.isBlinking) {
+      return Math.max(0, 1 - Math.abs(this.blinkProgress - 1));
+    }
+    if (this.idleAct && this.idleAct.kind === 'slowBlink') {
+      const u = Math.max(0, Math.min(1, (performance.now() - this.idleAct.t0) / this.idleAct.dur));
+      return 0.92 * Math.sin(u * Math.PI);
+    }
+    return 0;
+  }
+
   private pickImageSkinImage(): HTMLImageElement | null {
+    const blinkValue = this.imageSkinBlinkValue();
+    const mousePressing =
+      this.mouseLeftPress > 0.15 || this.mouseRightPress > 0.15 || this.mouseMiddlePress > 0.15;
     let expr = 'idle';
     if (this.sleepAmount > 0.55 && this.imageSkinImages.has('shy')) {
       expr = 'shy';
-    } else if ((this.squintAmount > 0.35 || this.bubbles.length > 0) && this.imageSkinImages.has('happy')) {
+    } else if (blinkValue > 0.42 && this.imageSkinImages.has('blink')) {
+      expr = 'blink';
+    } else if (
+      (this.squintAmount > 0.35 || this.bubbles.length > 0 || mousePressing) &&
+      this.imageSkinImages.has('happy')
+    ) {
       expr = 'happy';
     }
     return this.imageSkinImages.get(expr) || this.imageSkinImages.get('idle') || null;
@@ -670,12 +689,33 @@ export class KuroCatEngine {
     if (!img || !img.complete || !img.naturalWidth || !img.naturalHeight) return false;
     const maxHeight = Math.max(80, this.catBaseY - this.catTopY);
     const baseScale = Math.min((this.logicalW - 64) / img.naturalWidth, maxHeight / img.naturalHeight);
-    const scale = baseScale * (1 + breath * 0.006 + purrShift * 0.002);
-    const drawW = img.naturalWidth * scale;
-    const drawH = img.naturalHeight * scale;
-    const x = this.catCenterX - drawW / 2 + purrShift * 0.3;
-    const y = this.catTopY + (maxHeight - drawH) / 2;
-    ctx.drawImage(img, x, y, drawW, drawH);
+
+    // Mirror the default black-cat state machine on top of a static image: typing adds a
+    // subtle groove, curiosity enlarges/tilts, anger jitters, sleep sinks, purr keeps micro motion.
+    const typingLift = this.typingEnergy * 0.014;
+    const curiousLift = this.curiousAmount * 0.018;
+    const sleepSink = this.sleepAmount * 0.018;
+    const scaleBoost = 1 + breath * 0.006 + purrShift * 0.002 + typingLift + curiousLift - sleepSink;
+    const drawW = img.naturalWidth * baseScale;
+    const drawH = img.naturalHeight * baseScale;
+
+    const angryJitter = this.crossAmount > 0.05 ? Math.sin(this.elapsed * 21) * this.crossAmount : 0;
+    const curiousTilt = this.curiousAmount * Math.sin(this.elapsed * 4.6) * 0.012;
+    const tilt = Math.max(
+      -0.09,
+      Math.min(0.09, this.headTilt * 0.16 + this.typingSway * 0.014 + angryJitter * 0.018 + curiousTilt),
+    );
+    const offsetX = purrShift * 0.3 + this.typingSway * 1.6 + angryJitter * 1.4;
+    const offsetY = this.typingHunch * 2.2 + this.sleepAmount * 3.2;
+    const centerX = this.catCenterX + offsetX;
+    const centerY = this.catTopY + (maxHeight - drawH) / 2 + drawH / 2 + offsetY;
+
+    ctx.save();
+    ctx.translate(centerX, centerY);
+    ctx.rotate(tilt);
+    ctx.scale(scaleBoost, scaleBoost);
+    ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
+    ctx.restore();
     return true;
   }
 
@@ -4350,7 +4390,7 @@ export class KuroCatEngine {
 
       for (const sm of paw.smears) {
         ctx.save();
-        const smearMult = this.customSkin || this.catBreed === 'ragdoll' ? 0.58 : 1.0;
+        const smearMult = this.imageSkinId || this.catBreed === 'ragdoll' ? 0.58 : 1.0;
         ctx.globalAlpha = Math.max(0, sm.alpha * activeArmWeight * smearMult);
         this.drawPlumpCatArm(ctx, paw.side, sm.sx, sm.sy, sm.px, sm.py, 0, false, true);
         ctx.restore();

@@ -33,7 +33,7 @@ Agent は本リポジトリの `AGENTS.md` を読めば自動実行できます�
 
 「実写かイラストか」を指定する必要はありません。Agent は既定で「できるだけ再現」を選びます。画像がない場合は、画像の追加アップロードだけを求めます。
 
-> `main` ソースからビルドするか **v5.2.3 以上** のインストーラーを使ってください。古い v5.1.0 パッケージの MCP には `import_image_cat` がありません。
+> `main` ソースからビルドするか **v5.2.4 以上** のインストーラーを使ってください。古い v5.1.0 パッケージの MCP には `import_image_cat` がありません。
 
 ## 🎬 オンライン体験版 & クジラ娘 14 秒デモ動画
 
@@ -65,9 +65,9 @@ Agent は本リポジトリの `AGENTS.md` を読めば自動実行できます�
 
 ## 📥 ダウンロード（Windows / Win7 / macOS / Linux）
 
-[Releases](https://github.com/FEFKNCQ/Desktop-Cat-DIY/releases) または以下の最新 **`v5.2.3`** パッケージから直接入手できます（**✨ 3D フィギュアモード & 🎨 2D クラシック手描きデュアルエンジン（初期設定 3D）**、**2D/3D の前足プロポーション＆毛色なじみ刷新**、**選択式 3D 首輪ベル＆ゲーム自動検出ゲーミングヘッドセット（初期設定はいずれも OFF）**、**MCP AI カスタム模様 `spots[]` の 3D/2D 完全同期**、**1px 微振動対策付き 28 秒うたた寝**、**画面最上部まで引っかからないネイティブ自由ドラッグ**、**しっぽタイピング 4 モード**、**OBS 透過ソース**、**パスワード自動保護**、**アプリ内自動更新** を搭載）：
+[Releases](https://github.com/FEFKNCQ/Desktop-Cat-DIY/releases) または以下の最新 **`v5.2.4`** パッケージから直接入手できます（**✨ 3D フィギュアモード & 🎨 2D クラシック手描きデュアルエンジン（初期設定 3D）**、**2D/3D の前足プロポーション＆毛色なじみ刷新**、**選択式 3D 首輪ベル＆ゲーム自動検出ゲーミングヘッドセット（初期設定はいずれも OFF）**、**MCP AI カスタム模様 `spots[]` の 3D/2D 完全同期**、**1px 微振動対策付き 28 秒うたた寝**、**画面最上部まで引っかからないネイティブ自由ドラッグ**、**しっぽタイピング 4 モード**、**OBS 透過ソース**、**パスワード自動保護**、**アプリ内自動更新** を搭載）：
 
-- **🪟 Windows 10 / 11（65% インストーラー版 · `v5.2.3`）**：[**`KuroCat_5.2.3_x64-setup.exe`**](https://github.com/FEFKNCQ/Desktop-Cat-DIY/releases/download/v5.2.3/KuroCat_5.2.3_x64-setup.exe)（2.15 MB）｜[**高速ミラー**](https://qianyi.one/kurocat/?lang=ja#download)
+- **🪟 Windows 10 / 11（65% インストーラー版 · `v5.2.4`）**：[**`KuroCat_5.2.4_x64-setup.exe`**](https://github.com/FEFKNCQ/Desktop-Cat-DIY/releases/download/v5.2.4/KuroCat_5.2.4_x64-setup.exe)（2.15 MB）｜[**高速ミラー**](https://qianyi.one/kurocat/?lang=ja#download)
   - 初期設定は 65% コンパクト配列。デスクトップアイコン・スタートメニューを自動作成し、右クリックやトレイから **108 フルサイズ（テンキー付）**・**🐳 クジラ娘**・**OBS 透過ソース**・**更新確認** へいつでも切替可能。
   - **よくある質問**：
     - **Edge / Chrome のダウンロード警告・SmartScreen について**：商用コード署名なしの無料オープンソースのため警告が出ることがあります。
@@ -78,14 +78,14 @@ Agent は本リポジトリの `AGENTS.md` を読めば自動実行できます�
     - **フルスクリーンゲーム / 管理者権限 / OBS 配信**：ボーダレス・FSO ゲーム向けにフォーカスを奪わない最前面ガードを内蔵（**マウス透過ロック**＋`Alt` 一時解除がおすすめ）。管理者権限で動くゲームはトレイから **管理者として再起動** を利用してください。OBS 配信は右クリック → **OBS 透過ソース URL をコピー**（`http://127.0.0.1:27421/obs`・透過チャンネル標準対応・デスクトップ非表示の「OBS のみ表示」対応）。カーネル型アンチチート搭載ゲーム（VALORANT 等）ではトレイの **監視を一時停止して非表示** を推奨します。
 - **🖥️ Windows 7 SP1（64bit 専用ポータブル版 · `v5.1.0`）**：[**`KuroCat-v5.1.0-win7-x64-portable.zip`**](https://github.com/FEFKNCQ/Desktop-Cat-DIY/releases/download/v5.1.0/KuroCat-v5.1.0-win7-x64-portable.zip)（178.94 MB）｜[**高速ミラー**](https://qianyi.one/kurocat/releases/v5.1.0/KuroCat-v5.1.0-win7-x64-portable.zip)
   - ネイティブ PE 6.01 ビルド。Win7 最終対応オフライン **WebView2 109.0.1518.78** を同梱し、Aero ON/OFF を問わず白枠・ギザギザゼロの **256 段階ピクセル透過（`UpdateLayeredWindow`）** に対応。すべて展開し `KuroCat.exe` と `WebView2Runtime` を同フォルダに置いて起動してください。
-- **🍎 macOS 10.15 Catalina+（Apple Silicon M1–M4 & Intel ユニバーサル · `v5.2.3`）**：[**`KuroCat-v5.2.3-macos-universal.dmg`**](https://github.com/FEFKNCQ/Desktop-Cat-DIY/releases/download/v5.2.3/KuroCat-v5.2.3-macos-universal.dmg)（5.93 MB）｜[**高速ミラー**](https://qianyi.one/kurocat/releases/v5.2.3/KuroCat-v5.2.3-macos-universal.dmg)
+- **🍎 macOS 10.15 Catalina+（Apple Silicon M1–M4 & Intel ユニバーサル · `v5.2.4`）**：[**`KuroCat-v5.2.4-macos-universal.dmg`**](https://github.com/FEFKNCQ/Desktop-Cat-DIY/releases/download/v5.2.4/KuroCat-v5.2.4-macos-universal.dmg)（5.93 MB）｜[**高速ミラー**](https://qianyi.one/kurocat/releases/v5.2.4/KuroCat-v5.2.4-macos-universal.dmg)
   - `.dmg` を開き `KuroCat.app` を「アプリケーション」フォルダへドラッグして起動。3D/2D 切替・65%/108 キー・全 7 スキン内蔵。
   - **初回起動時（未公証オープンソース）**：「開発元を確認できない」「破損しています」と表示された場合は、ターミナルで一度だけ `xattr -cr /Applications/KuroCat.app` を実行してください（次回以降のアプリ内自動更新では不要）。
   - **キー・マウス監視権限**：「システム設定 → プライバシーとセキュリティ」で **アクセシビリティ** と **入力監視** の両方に `KuroCat` を許可してください（Karabiner-Elements 併用対応）。
   - **macOS Stdio MCP パス**：`/Applications/KuroCat.app/Contents/MacOS/KuroCat`（引数 `--mcp`）、または起動中に `http://127.0.0.1:27420/mcp` へ接続。
-- **🐧 Linux / Ubuntu 22.04+ / Debian 12+ / KylinOS V11+ / UOS（`v5.2.3`）**：
-  - **x86_64**：[**`.deb`（2.38 MB）**](https://github.com/FEFKNCQ/Desktop-Cat-DIY/releases/download/v5.2.3/KuroCat-v5.2.3-linux-amd64.deb) · [**`.AppImage`（77.52 MB）**](https://github.com/FEFKNCQ/Desktop-Cat-DIY/releases/download/v5.2.3/KuroCat-v5.2.3-linux-amd64.AppImage)
-  - **ARM64**：[**`.deb`（2.34 MB）**](https://github.com/FEFKNCQ/Desktop-Cat-DIY/releases/download/v5.2.3/KuroCat-v5.2.3-linux-arm64.deb) · [**`.AppImage`（75.69 MB）**](https://github.com/FEFKNCQ/Desktop-Cat-DIY/releases/download/v5.2.3/KuroCat-v5.2.3-linux-arm64.AppImage)
+- **🐧 Linux / Ubuntu 22.04+ / Debian 12+ / KylinOS V11+ / UOS（`v5.2.4`）**：
+  - **x86_64**：[**`.deb`（2.38 MB）**](https://github.com/FEFKNCQ/Desktop-Cat-DIY/releases/download/v5.2.4/KuroCat-v5.2.4-linux-amd64.deb) · [**`.AppImage`（77.52 MB）**](https://github.com/FEFKNCQ/Desktop-Cat-DIY/releases/download/v5.2.4/KuroCat-v5.2.4-linux-amd64.AppImage)
+  - **ARM64**：[**`.deb`（2.34 MB）**](https://github.com/FEFKNCQ/Desktop-Cat-DIY/releases/download/v5.2.4/KuroCat-v5.2.4-linux-arm64.deb) · [**`.AppImage`（75.69 MB）**](https://github.com/FEFKNCQ/Desktop-Cat-DIY/releases/download/v5.2.4/KuroCat-v5.2.4-linux-arm64.AppImage)
   - **動作要件**：Tauri v2 / Ubuntu 22.04 ベースでビルドされており、**`glibc >= 2.34`** が必要です（`.deb` 版は **`libwebkit2gtk-4.1-0`** と **`libayatana-appindicator3-1`** に依存。Ubuntu 20.04 / `glibc 2.31` ベースの KylinOS V10 SP1 には非対応）。
   - X11 `XRecord` を動的ロードして root 権限なしでキー・マウスを取得（Wayland では `evdev` へ自動フォールバック）。ミラーは [`https://qianyi.one/kurocat/?lang=ja#linux-download`](https://qianyi.one/kurocat/?lang=ja#linux-download)。
 

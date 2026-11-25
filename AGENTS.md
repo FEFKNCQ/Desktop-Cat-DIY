@@ -35,12 +35,12 @@ https://github.com/FEFKNCQ/Desktop-Cat-DIY
 ## 标准流程
 
 1. 读取 `skills/My-Cat/SKILL.md`
-2. 安装/启动（必须从 main 源码构建，或使用 v5.2.3+ 安装包；**v5.1.0 旧包的 MCP 没有 `import_image_cat`**）：
+2. 安装/启动（必须从 main 源码构建，或使用 v5.2.4+ 安装包；**v5.1.0 旧包的 MCP 没有 `import_image_cat`**）：
    ```bash
    npm run cat:bootstrap -- --check-only
    npm run cat:bootstrap -- --start
    ```
-   如果用户已经安装了旧包，先卸载/关闭旧 KuroCat，再用 main 源码启动，或改用 v5.2.3+ 安装包。
+   如果用户已经安装了旧包，先卸载/关闭旧 KuroCat，再用 main 源码启动，或改用 v5.2.4+ 安装包。
 3. 如果 MCP 端口未就绪，提示用户在托盘勾选「开启 MCP 扩展」，不要反复重启
 4. 检查参考图片：
    - 没有图片：请用户至少上传一张，不继续安装/导入
