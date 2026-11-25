@@ -19,7 +19,7 @@ mod windows_display;
 #[cfg(windows)]
 const WIN7_OFFSCREEN_PARK_POS: i32 = -16000;
 
-use cats::{all_cats, cat_exists, cats_path, sanitize_cat_id, CatSkinConfig};
+use cats::{all_cats, cat_exists, cats_path, get_cat_image_data_urls, sanitize_cat_id, CatSkinConfig};
 use config::{
     config_path, load_settings, normalize_keyboard_layout, normalize_keyboard_orientation,
     normalize_tail_key_ids, normalize_tail_key_mode, save_settings, set_windows_autostart,
@@ -290,6 +290,11 @@ fn get_settings(state: State<'_, AppState>) -> AppSettings {
 #[tauri::command]
 fn get_cats() -> Vec<CatSkinConfig> {
     all_cats()
+}
+
+#[tauri::command]
+fn get_cat_images(id: String) -> Result<serde_json::Value, String> {
+    get_cat_image_data_urls(&id)
 }
 
 #[tauri::command]
@@ -2457,6 +2462,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             get_settings,
             get_cats,
+            get_cat_images,
             get_game_active,
             get_mcp_config,
             get_obs_url,

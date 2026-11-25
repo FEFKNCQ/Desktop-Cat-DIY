@@ -12,7 +12,11 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build"
+    "tauri:build": "tauri build",
+    "cat:bootstrap": "node skills/My-Cat/scripts/bootstrap_kurocat.mjs",
+    "cat:validate": "node skills/My-Cat/scripts/validate_cat_skin.mjs",
+    "cat:upsert": "node skills/My-Cat/scripts/upsert_cat_from_json.mjs",
+    "cat:import-image": "node skills/My-Cat/scripts/import_image_cat.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.2.0",

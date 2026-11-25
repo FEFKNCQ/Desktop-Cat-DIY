@@ -196,9 +196,11 @@ function shouldWearHeadphonesNow(): boolean {
 }
 
 function wants3DNow(): boolean {
+  const activeCat = catList.find((cat) => cat.id === settings.catBreed);
   return (
     settings.renderMode !== '2d' &&
     settings.catBreed !== 'dafeiyu' &&
+    activeCat?.kind !== 'image' &&
     !tailPickerOpen &&
     !isWin7Ulw &&
     !webgl3dUnavailable

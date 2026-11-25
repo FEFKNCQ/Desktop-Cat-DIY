@@ -1,6 +1,6 @@
 use crate::cats::{
-    all_cats, cat_exists, cat_schema_guide, cats_path, delete_custom_cat, sanitize_cat_id,
-    upsert_custom_cat, CatSkinConfig,
+    all_cats, cat_exists, cat_schema_guide, cats_path, delete_custom_cat, import_image_cat_files,
+    sanitize_cat_id, upsert_custom_cat, CatSkinConfig,
 };
 use crate::config::{load_settings, save_settings, set_windows_autostart};
 use serde_json::{json, Value};
@@ -106,6 +106,35 @@ fn tool_definitions() -> Value {
                         "type": "boolean",
                         "default": true,
                         "description": "Immediately switch the live desktop pet to this cat (default: true)."
+                    }
+                }
+            }
+        },
+        {
+            "name": "import_image_cat",
+            "description": "Create or replace an image-based custom cat from local PNG files (224x278, 8-bit RGB/RGBA, transparent background recommended). Agent-generated pet images can be passed by file path; assets are copied into KuroCat app data and hot-reload immediately. Image skins render in 2D only.",
+            "inputSchema": {
+                "type": "object",
+                "required": ["id", "name", "images"],
+                "properties": {
+                    "id": { "type": "string", "description": "Unique lowercase slug ID, e.g. 'my-photo-cat'" },
+                    "name": { "type": "string", "description": "Display name shown in menu" },
+                    "images": {
+                        "type": "object",
+                        "description": "Expression -> local PNG path. idle is required; blink, shy, happy are optional.",
+                        "required": ["idle"],
+                        "properties": {
+                            "idle": { "type": "string", "description": "Absolute path to idle.png (224x278)" },
+                            "blink": { "type": "string" },
+                            "shy": { "type": "string" },
+                            "happy": { "type": "string" }
+                        },
+                        "additionalProperties": false
+                    },
+                    "activate": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Immediately switch the live desktop pet to this image cat."
                     }
                 }
             }
@@ -226,6 +255,40 @@ fn execute_tool(name: &str, args: &Value, on_change: &dyn Fn()) -> Value {
                     }))
                 }
                 Err(e) => err_text(&format!("Failed to save custom cat: {}", e)),
+            }
+        }
+        "import_image_cat" => {
+            let Some(id_raw) = args.get("id").and_then(|v| v.as_str()) else {
+                return err_text("Missing required 'id' string argument.");
+            };
+            let Some(name_raw) = args.get("name").and_then(|v| v.as_str()) else {
+                return err_text("Missing required 'name' string argument.");
+            };
+            let Some(images) = args.get("images") else {
+                return err_text("Missing required 'images' object argument.");
+            };
+            match import_image_cat_files(id_raw, name_raw, images) {
+                Ok(saved) => {
+                    let activate = args
+                        .get("activate")
+                        .and_then(|v| v.as_bool())
+                        .unwrap_or(true);
+                    if activate {
+                        let mut s = load_settings();
+                        s.cat_breed = saved.id.clone();
+                        s.render_mode = "2d".to_string();
+                        save_settings(&s);
+                    }
+                    on_change();
+                    ok_text(json!({
+                        "status": "saved",
+                        "kind": "image",
+                        "activated": activate,
+                        "renderMode": if activate { "2d" } else { "unchanged" },
+                        "cat": saved
+                    }))
+                }
+                Err(e) => err_text(&format!("Failed to import image cat: {}", e)),
             }
         }
         "switch_cat" => {
@@ -368,7 +431,7 @@ pub fn handle_jsonrpc(req: &Value, on_change: &dyn Fn()) -> Option<Value> {
                     "name": SERVER_NAME,
                     "version": SERVER_VERSION
                 },
-                "instructions": "Use get_cat_schema to inspect the custom cat design format, then call upsert_cat (with activate: true) to create or customize desktop pet cats in real time on the user's Windows desktop."
+                "instructions": "Use get_cat_schema to inspect the custom cat design format. Use upsert_cat for parameter-based cats, or import_image_cat with local 224x278 RGBA PNG paths for photo/generated image skins. Image skins force 2D rendering and are verified live with list_cats."
             }))
         }
         "ping" => Ok(json!({})),

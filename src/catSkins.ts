@@ -11,11 +11,22 @@ export interface CatSpot {
 
 export type CatPattern = 'solid' | 'bicolor' | 'tuxedo' | 'tabby' | 'calico' | 'siamese';
 
+export interface CatImageSkin {
+  idle: string;
+  blink?: string;
+  shy?: string;
+  happy?: string;
+  width?: number;
+  height?: number;
+}
+
 export interface CatSkinConfig {
   id: string;
   name: string;
   emoji?: string;
   builtin?: boolean;
+  kind?: 'params' | 'image';
+  imageSkin?: CatImageSkin;
 
   furColor: string;
   furSecondaryColor?: string;

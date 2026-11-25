@@ -1,0 +1,37 @@
+{
+  "id": "my-orange-cat",
+  "name": "我家大橘",
+  "emoji": "cat",
+  "furColor": "#f2a452",
+  "furSecondaryColor": "#e38c38",
+  "outlineColor": "#6b4322",
+  "pattern": "tabby",
+  "stripeColor": "#b85d19",
+  "bellyBibColor": "#fdf6e8",
+  "earOuterColor": "#e38c38",
+  "earInnerColor": "#f3b9b5",
+  "tailColor": "#eb9640",
+  "tailTipColor": "#b85d19",
+  "tailStripes": true,
+  "eyeColorTop": "#b86b14",
+  "eyeColorBottom": "#ffd369",
+  "eyeCatchlight": true,
+  "noseColor": "#ee8d98",
+  "blushColor": "#f596a2",
+  "armColor": "#f2a452",
+  "pawColor": "#fdf6e8",
+  "accentColor": "#ffb347",
+  "accentSideColor": "#cc7a16",
+  "spots": [
+    {
+      "part": "head",
+      "x": -0.35,
+      "y": -0.15,
+      "rx": 7,
+      "ry": 5,
+      "rotation": 0.2,
+      "color": "#b85d19",
+      "opacity": 0.8
+    }
+  ]
+}

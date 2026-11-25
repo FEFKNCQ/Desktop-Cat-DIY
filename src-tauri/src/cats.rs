@@ -24,6 +24,39 @@ fn default_opacity() -> f64 {
     0.85
 }
 
+fn default_skin_kind() -> String {
+    "params".to_string()
+}
+
+fn default_fur_color() -> String {
+    "#ffffff".to_string()
+}
+
+fn default_image_width() -> u32 {
+    224
+}
+
+fn default_image_height() -> u32 {
+    278
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CatImageSkin {
+    /// Stored filename inside <app_data>/cat-images/<cat-id>/
+    pub idle: String,
+    #[serde(default)]
+    pub blink: Option<String>,
+    #[serde(default)]
+    pub shy: Option<String>,
+    #[serde(default)]
+    pub happy: Option<String>,
+    #[serde(default = "default_image_width")]
+    pub width: u32,
+    #[serde(default = "default_image_height")]
+    pub height: u32,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CatSkinConfig {
@@ -34,7 +67,15 @@ pub struct CatSkinConfig {
     #[serde(default)]
     pub builtin: bool,
 
+    /// "params" (default) or "image"
+    #[serde(default = "default_skin_kind")]
+    pub kind: String,
+    /// Image skin asset manifest; only used when kind == "image"
+    #[serde(default)]
+    pub image_skin: Option<CatImageSkin>,
+
     // Core fur & outline
+    #[serde(default = "default_fur_color")]
     pub fur_color: String,
     #[serde(default)]
     pub fur_secondary_color: Option<String>,
@@ -153,6 +194,218 @@ pub fn sanitize_cat_id(raw: &str) -> String {
     }
 }
 
+pub fn cat_images_dir() -> PathBuf {
+    crate::config::app_data_dir().join("cat-images")
+}
+
+pub fn cat_image_dir(id: &str) -> PathBuf {
+    cat_images_dir().join(sanitize_cat_id(id))
+}
+
+const PNG_SIGNATURE: [u8; 8] = [137, 80, 78, 71, 13, 10, 26, 10];
+const MAX_IMAGE_BYTES: u64 = 12 * 1024 * 1024;
+
+fn read_png_header(path: &std::path::Path) -> Result<(u32, u32, u8, u8), String> {
+    use std::io::Read;
+    let mut file = std::fs::File::open(path).map_err(|e| format!("Cannot open image: {}", e))?;
+    let mut buf = [0u8; 29];
+    file.read_exact(&mut buf)
+        .map_err(|e| format!("Cannot read PNG header: {}", e))?;
+    if buf[0..8] != PNG_SIGNATURE {
+        return Err("Image is not a valid PNG file".to_string());
+    }
+    if u32::from_be_bytes([buf[8], buf[9], buf[10], buf[11]]) != 13 {
+        return Err("Invalid PNG IHDR chunk length".to_string());
+    }
+    if &buf[12..16] != &b"IHDR"[..] {
+        return Err("PNG first chunk is not IHDR".to_string());
+    }
+    let width = u32::from_be_bytes([buf[16], buf[17], buf[18], buf[19]]);
+    let height = u32::from_be_bytes([buf[20], buf[21], buf[22], buf[23]]);
+    let bit_depth = buf[24];
+    let color_type = buf[25];
+    if buf[26] != 0 || buf[27] != 0 {
+        return Err("Unsupported PNG compression or filter method".to_string());
+    }
+    if bit_depth != 8 {
+        return Err("PNG must use 8-bit color depth".to_string());
+    }
+    if color_type != 2 && color_type != 6 {
+        return Err("PNG must be RGB or RGBA color type".to_string());
+    }
+    Ok((width, height, bit_depth, color_type))
+}
+
+pub fn validate_image_asset(path: &std::path::Path, label: &str) -> Result<(), String> {
+    let meta = std::fs::metadata(path)
+        .map_err(|e| format!("Cannot read image '{}': {}", label, e))?;
+    if !meta.is_file() {
+        return Err(format!("Image '{}' is not a file", label));
+    }
+    if meta.len() == 0 || meta.len() > MAX_IMAGE_BYTES {
+        return Err(format!(
+            "Image '{}' size must be between 1 byte and 12 MB",
+            label
+        ));
+    }
+    let (width, height, _, _) = read_png_header(path)?;
+    if width != default_image_width() || height != default_image_height() {
+        return Err(format!(
+            "Image '{}' must be {}x{} PNG, got {}x{}",
+            label,
+            default_image_width(),
+            default_image_height(),
+            width,
+            height
+        ));
+    }
+    Ok(())
+}
+
+fn base64_encode(data: &[u8]) -> String {
+    const TABLE: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut out = String::with_capacity((data.len() + 2) / 3 * 4);
+    let mut i = 0;
+    while i < data.len() {
+        let a = data[i];
+        let b = if i + 1 < data.len() { data[i + 1] } else { 0 };
+        let c = if i + 2 < data.len() { data[i + 2] } else { 0 };
+        out.push(TABLE[(a >> 2) as usize] as char);
+        out.push(TABLE[(((a & 0x03) << 4) | (b >> 4)) as usize] as char);
+        if i + 1 < data.len() {
+            out.push(TABLE[(((b & 0x0f) << 2) | (c >> 6)) as usize] as char);
+        } else {
+            out.push('=');
+        }
+        if i + 2 < data.len() {
+            out.push(TABLE[(c & 0x3f) as usize] as char);
+        } else {
+            out.push('=');
+        }
+        i += 3;
+    }
+    out
+}
+
+fn remove_cat_image_dir(id: &str) {
+    let dir = cat_image_dir(id);
+    if dir.exists() {
+        let _ = fs::remove_dir_all(dir);
+    }
+}
+
+pub fn import_image_cat_files(
+    id_raw: &str,
+    name_raw: &str,
+    images: &serde_json::Value,
+) -> Result<CatSkinConfig, String> {
+    use std::collections::BTreeMap;
+
+    let id = sanitize_cat_id(id_raw);
+    let name = {
+        let trimmed = name_raw.trim();
+        if trimmed.is_empty() {
+            id.clone()
+        } else {
+            trimmed.to_string()
+        }
+    };
+    let obj = images.as_object().ok_or_else(|| {
+        "Missing required 'images' object with at least an 'idle' PNG path".to_string()
+    })?;
+
+    let mut files: BTreeMap<String, String> = BTreeMap::new();
+    for (expr, value) in obj {
+        if !matches!(expr.as_str(), "idle" | "blink" | "shy" | "happy") {
+            return Err(format!(
+                "Unsupported image expression '{}'. Use idle, blink, shy, or happy.",
+                expr
+            ));
+        }
+        let path_str = value
+            .as_str()
+            .ok_or_else(|| format!("Image path for '{}' must be a string", expr))?;
+        let path = std::path::Path::new(path_str);
+        validate_image_asset(path, expr)?;
+        files.insert(expr.clone(), path_str.to_string());
+    }
+    if !files.contains_key("idle") {
+        return Err("Missing required 'idle' image".to_string());
+    }
+
+    let dest_dir = cat_image_dir(&id);
+    fs::create_dir_all(&dest_dir).map_err(|e| format!("Cannot create image directory: {}", e))?;
+    let mut asset_names = BTreeMap::new();
+    for (expr, source) in files {
+        let filename = format!("{}.png", expr);
+        let dest = dest_dir.join(&filename);
+        fs::copy(&source, &dest)
+            .map_err(|e| format!("Cannot copy '{}' image: {}", expr, e))?;
+        asset_names.insert(expr, filename);
+    }
+
+    let image_skin = serde_json::json!({
+        "idle": asset_names.get("idle").unwrap(),
+        "blink": asset_names.get("blink"),
+        "shy": asset_names.get("shy"),
+        "happy": asset_names.get("happy"),
+        "width": default_image_width(),
+        "height": default_image_height()
+    });
+    let cat_json = serde_json::json!({
+        "id": id,
+        "name": name,
+        "kind": "image",
+        "imageSkin": image_skin,
+        "furColor": "#ffffff",
+        "pattern": "solid",
+        "emoji": "🐈"
+    });
+    serde_json::from_value(cat_json).map_err(|e| format!("Invalid generated cat config: {}", e))
+}
+
+pub fn get_cat_image_data_urls(id_raw: &str) -> Result<serde_json::Value, String> {
+    let id = sanitize_cat_id(id_raw);
+    let cat = all_cats()
+        .into_iter()
+        .find(|c| c.id == id)
+        .ok_or_else(|| format!("Cat '{}' not found", id))?;
+    if cat.kind != "image" {
+        return Err(format!("Cat '{}' is not an image skin", id));
+    }
+    let skin = cat
+        .image_skin
+        .ok_or_else(|| format!("Image skin manifest missing for '{}'", id))?;
+    let dir = cat_image_dir(&id);
+    let mut result = serde_json::Map::new();
+    let entries = [
+        ("idle", skin.idle.as_str()),
+        ("blink", skin.blink.as_deref().unwrap_or("")),
+        ("shy", skin.shy.as_deref().unwrap_or("")),
+        ("happy", skin.happy.as_deref().unwrap_or("")),
+    ];
+    for (expr, filename) in entries {
+        if filename.is_empty() {
+            continue;
+        }
+        let path = dir.join(filename);
+        let bytes = match fs::read(&path) {
+            Ok(b) => b,
+            Err(_) => continue,
+        };
+        result.insert(
+            expr.to_string(),
+            serde_json::Value::String(format!("data:image/png;base64,{}", base64_encode(&bytes))),
+        );
+    }
+    if !result.contains_key("idle") {
+        return Err(format!("No readable idle image found for '{}'", id));
+    }
+    result.insert("width".to_string(), serde_json::Value::from(skin.width));
+    result.insert("height".to_string(), serde_json::Value::from(skin.height));
+    Ok(serde_json::Value::Object(result))
+}
+
 pub fn builtin_cats() -> Vec<CatSkinConfig> {
     vec![
         CatSkinConfig {
@@ -160,6 +413,8 @@ pub fn builtin_cats() -> Vec<CatSkinConfig> {
             name: "小黑猫".to_string(),
             emoji: Some("🐈‍⬛".to_string()),
             builtin: true,
+            kind: "params".to_string(),
+            image_skin: None,
             fur_color: "#141314".to_string(),
             fur_secondary_color: None,
             outline_color: None,
@@ -203,6 +458,8 @@ pub fn builtin_cats() -> Vec<CatSkinConfig> {
             name: "布偶猫".to_string(),
             emoji: Some("🐱".to_string()),
             builtin: true,
+            kind: "params".to_string(),
+            image_skin: None,
             fur_color: "#fbf9f3".to_string(),
             fur_secondary_color: Some("#e8e2d6".to_string()),
             outline_color: Some("#5d5148".to_string()),
@@ -246,6 +503,8 @@ pub fn builtin_cats() -> Vec<CatSkinConfig> {
             name: "大橘猫".to_string(),
             emoji: Some("🍊".to_string()),
             builtin: true,
+            kind: "params".to_string(),
+            image_skin: None,
             fur_color: "#f2a452".to_string(),
             fur_secondary_color: Some("#e38c38".to_string()),
             outline_color: Some("#6b4322".to_string()),
@@ -289,6 +548,8 @@ pub fn builtin_cats() -> Vec<CatSkinConfig> {
             name: "三花猫".to_string(),
             emoji: Some("🌸".to_string()),
             builtin: true,
+            kind: "params".to_string(),
+            image_skin: None,
             fur_color: "#fcfaf5".to_string(),
             fur_secondary_color: Some("#f1ece2".to_string()),
             outline_color: Some("#4f4640".to_string()),
@@ -332,6 +593,8 @@ pub fn builtin_cats() -> Vec<CatSkinConfig> {
             name: "奶牛猫".to_string(),
             emoji: Some("🐄".to_string()),
             builtin: true,
+            kind: "params".to_string(),
+            image_skin: None,
             fur_color: "#1d1f24".to_string(),
             fur_secondary_color: Some("#15171b".to_string()),
             outline_color: Some("#141519".to_string()),
@@ -375,6 +638,8 @@ pub fn builtin_cats() -> Vec<CatSkinConfig> {
             name: "暹罗猫".to_string(),
             emoji: Some("🤎".to_string()),
             builtin: true,
+            kind: "params".to_string(),
+            image_skin: None,
             fur_color: "#f3eadb".to_string(),
             fur_secondary_color: Some("#e2d4be".to_string()),
             outline_color: Some("#4c3b30".to_string()),
@@ -418,6 +683,8 @@ pub fn builtin_cats() -> Vec<CatSkinConfig> {
             name: "大肥鱼".to_string(),
             emoji: Some("🐳".to_string()),
             builtin: true,
+            kind: "params".to_string(),
+            image_skin: None,
             fur_color: "#2957a4".to_string(),
             fur_secondary_color: Some("#1d3269".to_string()),
             outline_color: Some("#16203d".to_string()),
@@ -524,6 +791,7 @@ pub fn delete_custom_cat(id: &str) -> Result<bool, String> {
         return Ok(false);
     }
     save_custom_cats(&custom)?;
+    remove_cat_image_dir(&clean_id);
     Ok(true)
 }
 
@@ -534,7 +802,16 @@ pub fn cat_exists(id: &str) -> bool {
 
 pub fn cat_schema_guide() -> serde_json::Value {
     serde_json::json!({
-        "description": "KuroCat Custom Cat Skin Schema. Pass any custom cat JSON to upsert_cat (with activate: true) to immediately add and render it live on the user's desktop!",
+        "description": "KuroCat Custom Cat Skin Schema. Pass any custom cat JSON to upsert_cat (with activate: true) to immediately add and render it live. For a real photo/generated image skin, call import_image_cat with local PNG paths instead; images must be 224x278 8-bit RGB/RGBA PNG with transparent background.",
+        "imageSkin": {
+            "tool": "import_image_cat",
+            "requiredImages": ["idle"],
+            "optionalImages": ["blink", "shy", "happy"],
+            "size": "224x278",
+            "format": "8-bit RGB/RGBA PNG, transparent background recommended",
+            "config": "kind: 'image', imageSkin: { idle: 'idle.png', blink: 'blink.png', shy: 'shy.png', happy: 'happy.png', width: 224, height: 278 }",
+            "note": "Image skins force 2D Canvas rendering; 3D mode is unavailable for them. delete_cat removes the stored images."
+        },
         "patterns": {
             "solid": "Single coat color (e.g., British Shorthair blue, white Persian, golden chinchilla, black cat)",
             "bicolor": "Ragdoll / bicolor inverted-V face mask (uses maskColor, foreheadBridgeColor, flankColor)",

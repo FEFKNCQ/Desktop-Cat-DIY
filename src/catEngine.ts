@@ -10,6 +10,7 @@ import {
 import { catAudio } from './audio';
 import { resolveCustomSkin, type CatSkinConfig, type ResolvedSkin } from './catSkins';
 import { DaFeiYuRenderer, type DaFeiYuLayout } from './dafeiyuRenderer';
+import { invoke } from '@tauri-apps/api/core';
 
 export const LOGICAL_W = 420;
 export const LOGICAL_H = 440;
@@ -248,6 +249,12 @@ export class KuroCatEngine {
   private renderScale = 1.0;
   private embedded = false;
   private dafeiyu = new DaFeiYuRenderer();
+  private imageSkinId: string | null = null;
+  private imageSkinSignature = '';
+  private imageSkinImages = new Map<string, HTMLImageElement>();
+  private imageSkinWidth = 224;
+  private imageSkinHeight = 278;
+  private imageSkinLoadVersion = 0;
   private catTail = {
     heldVks: new Set<number>(),
     targetX: 320,
@@ -579,22 +586,97 @@ export class KuroCatEngine {
   }
 
   public setCatAppearance(breedId: string, skin?: CatSkinConfig | null): void {
-    if (breedId === 'dafeiyu') {
-      this.catBreed = 'dafeiyu';
+    const isImageSkin = Boolean(skin && skin.kind === 'image' && skin.imageSkin?.idle);
+    if (isImageSkin && skin) {
+      const signature = JSON.stringify(skin.imageSkin);
+      this.catBreed = 'black';
       this.customSkin = null;
       catAudio.setPurrIntensity(0);
-    } else if ((breedId === 'black' || breedId === 'ragdoll') && (!skin || skin.builtin)) {
-      this.catBreed = breedId;
-      this.customSkin = null;
-    } else if (skin) {
-      this.catBreed = 'black';
-      this.customSkin = resolveCustomSkin(skin);
+      if (this.imageSkinId !== skin.id || this.imageSkinSignature !== signature) {
+        this.imageSkinId = skin.id;
+        this.imageSkinSignature = signature;
+        this.imageSkinImages.clear();
+        this.loadImageSkin(skin.id);
+      }
     } else {
-      this.catBreed = 'black';
-      this.customSkin = null;
+      this.clearImageSkin();
+      if (breedId === 'dafeiyu') {
+        this.catBreed = 'dafeiyu';
+        this.customSkin = null;
+        catAudio.setPurrIntensity(0);
+      } else if ((breedId === 'black' || breedId === 'ragdoll') && (!skin || skin.builtin)) {
+        this.catBreed = breedId;
+        this.customSkin = null;
+      } else if (skin) {
+        this.catBreed = 'black';
+        this.customSkin = resolveCustomSkin(skin);
+      } else {
+        this.catBreed = 'black';
+        this.customSkin = null;
+      }
     }
     this.syncLayoutPositions();
     this.wakeRendering();
+  }
+
+  private clearImageSkin(): void {
+    this.imageSkinId = null;
+    this.imageSkinSignature = '';
+    this.imageSkinImages.clear();
+    this.imageSkinLoadVersion += 1;
+  }
+
+  private loadImageSkin(id: string): void {
+    const version = ++this.imageSkinLoadVersion;
+    invoke<Record<string, unknown>>('get_cat_images', { id })
+      .then((data) => {
+        if (version !== this.imageSkinLoadVersion) return;
+        const images = new Map<string, HTMLImageElement>();
+        for (const expr of ['idle', 'blink', 'shy', 'happy']) {
+          const src = data?.[expr];
+          if (typeof src !== 'string' || !src.startsWith('data:image/')) continue;
+          const img = new Image();
+          img.onload = () => this.wakeRendering();
+          img.src = src;
+          images.set(expr, img);
+        }
+        this.imageSkinImages = images;
+        const width = Number(data?.width);
+        const height = Number(data?.height);
+        this.imageSkinWidth = Number.isFinite(width) && width > 0 ? width : 224;
+        this.imageSkinHeight = Number.isFinite(height) && height > 0 ? height : 278;
+        this.wakeRendering();
+      })
+      .catch((error) => {
+        if (version !== this.imageSkinLoadVersion) return;
+        console.warn('[KuroCat] Failed to load image skin:', error);
+        this.clearImageSkin();
+        this.wakeRendering();
+      });
+  }
+
+  private pickImageSkinImage(): HTMLImageElement | null {
+    let expr = 'idle';
+    if (this.sleepAmount > 0.55 && this.imageSkinImages.has('shy')) {
+      expr = 'shy';
+    } else if ((this.squintAmount > 0.35 || this.bubbles.length > 0) && this.imageSkinImages.has('happy')) {
+      expr = 'happy';
+    }
+    return this.imageSkinImages.get(expr) || this.imageSkinImages.get('idle') || null;
+  }
+
+  private drawImageSkin(ctx: CanvasRenderingContext2D, breath: number, purrShift: number): boolean {
+    const img = this.pickImageSkinImage();
+    if (!img || !img.complete || !img.naturalWidth || !img.naturalHeight) return false;
+    const maxHeight = Math.max(80, this.catBaseY - this.catTopY);
+    const baseScale = Math.min((this.logicalW - 64) / img.naturalWidth, maxHeight / img.naturalHeight);
+    const scale = baseScale * (1 + breath * 0.006 + purrShift * 0.002);
+    const drawW = img.naturalWidth * scale;
+    const drawH = img.naturalHeight * scale;
+    const x = this.catCenterX - drawW / 2 + purrShift * 0.3;
+    const y = this.catTopY + (maxHeight - drawH) / 2;
+    ctx.drawImage(img, x, y, drawW, drawH);
+    return true;
   }
 
   public setHeadphones(active: boolean): void {
@@ -2246,6 +2328,22 @@ export class KuroCatEngine {
       this.drawMiniMouse(ctx);
       this.drawKeyboard(ctx);
       this.dafeiyu.renderForeground(ctx, this.lastDt, now, layout);
+      if (this.showKeyBubbles && !this.privacyMode) {
+        this.drawKeyBubbles(ctx);
+        this.drawMouseBadges(ctx);
+      }
+      ctx.restore();
+      return;
+    }
+
+    const imageReady = Boolean(
+      this.imageSkinId &&
+        Array.from(this.imageSkinImages.values()).some((img) => img.complete && img.naturalWidth > 0),
+    );
+    if (imageReady) {
+      this.drawMiniMouse(ctx);
+      this.drawKeyboard(ctx);
+      this.drawImageSkin(ctx, breath, purrShift);
       if (this.showKeyBubbles && !this.privacyMode) {
         this.drawKeyBubbles(ctx);
         this.drawMouseBadges(ctx);
