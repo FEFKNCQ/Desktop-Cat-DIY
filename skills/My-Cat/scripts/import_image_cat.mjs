@@ -79,6 +79,19 @@ function validatePayload(payload, activateArg) {
       if (error) errors.push(error);
     }
   }
+  if (payload.colors !== undefined) {
+    if (!payload.colors || typeof payload.colors !== 'object' || Array.isArray(payload.colors)) {
+      errors.push('colors 必须是对象');
+    } else {
+      const allowed = new Set(['furColor', 'pawColor', 'tailColor', 'tailTipColor', 'outlineColor', 'accentColor', 'accentSideColor', 'noseColor', 'eyeColorTop', 'eyeColorBottom']);
+      for (const [key, value] of Object.entries(payload.colors)) {
+        if (!allowed.has(key)) errors.push(`colors.${key} 不支持`);
+        else if (typeof value !== 'string' || !/^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(value.trim())) {
+          errors.push(`colors.${key} 必须是 #RGB 或 #RRGGBB`);
+        }
+      }
+    }
+  }
   return errors;
 }
 
@@ -161,13 +174,14 @@ async function main() {
   const toolList = await rpc(args.url, 'tools/list');
   const toolNames = (toolList?.result?.tools || []).map((tool) => tool?.name).filter(Boolean);
   if (!toolNames.includes('import_image_cat')) {
-    throw new Error(`当前 MCP 缺少 import_image_cat（工具：${toolNames.join(', ') || '无'}）。请关闭/卸载旧版 KuroCat，改用 v5.2.0+ 安装包或从 main 源码启动。`);
+    throw new Error(`当前 MCP 缺少 import_image_cat（工具：${toolNames.join(', ') || '无'}）。请关闭/卸载旧版 KuroCat，改用 v5.2.1+ 安装包或从 main 源码启动。`);
   }
 
   const argumentsPayload = {
     id: payload.id,
     name: payload.name,
     images: payload.images,
+    colors: payload.colors || {},
     activate: typeof payload.activate === 'boolean' ? payload.activate : args.activate
   };
 

@@ -33,7 +33,7 @@ Agents can read `AGENTS.md` in this repository. Upload **at least one reference 
 
 Do not specify whether the image is a photo or cartoon. The Agent will default to “restore it as closely as possible”. Without a reference image, the Agent will only ask you to upload one.
 
-> Use a build from `main` or the **v5.2.0+** installer. The old v5.1.0 package does not expose `import_image_cat` in MCP.
+> Use a build from `main` or the **v5.2.1+** installer. The old v5.1.0 package does not expose `import_image_cat` in MCP.
 
 ## 🎬 Live Web Playground & 14s BigFish Demo Video
 

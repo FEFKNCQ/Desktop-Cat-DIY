@@ -298,6 +298,7 @@ pub fn import_image_cat_files(
     id_raw: &str,
     name_raw: &str,
     images: &serde_json::Value,
+    colors: &serde_json::Value,
 ) -> Result<CatSkinConfig, String> {
     use std::collections::BTreeMap;
 
@@ -352,15 +353,38 @@ pub fn import_image_cat_files(
         "width": default_image_width(),
         "height": default_image_height()
     });
-    let cat_json = serde_json::json!({
+    let color = |key: &str, default: &str| -> String {
+        colors
+            .get(key)
+            .and_then(|v| v.as_str())
+            .filter(|s| !s.trim().is_empty())
+            .unwrap_or(default)
+            .to_string()
+    };
+    let mut cat_json = serde_json::json!({
         "id": id,
         "name": name,
         "kind": "image",
         "imageSkin": image_skin,
-        "furColor": "#ffffff",
+        "furColor": color("furColor", "#ffffff"),
+        "pawColor": color("pawColor", &color("furColor", "#f5efe6")),
+        "tailColor": color("tailColor", &color("furColor", "#f5efe6")),
+        "tailTipColor": color("tailTipColor", &color("furColor", "#e7d9c6")),
+        "outlineColor": color("outlineColor", "#6b5b4d"),
+        "accentColor": color("accentColor", "#c8f538"),
+        "accentSideColor": color("accentSideColor", "#8cb014"),
         "pattern": "solid",
         "emoji": "🐈"
     });
+    if let Some(value) = colors.get("noseColor").and_then(|v| v.as_str()) {
+        cat_json["noseColor"] = serde_json::Value::String(value.to_string());
+    }
+    if let Some(value) = colors.get("eyeColorTop").and_then(|v| v.as_str()) {
+        cat_json["eyeColorTop"] = serde_json::Value::String(value.to_string());
+    }
+    if let Some(value) = colors.get("eyeColorBottom").and_then(|v| v.as_str()) {
+        cat_json["eyeColorBottom"] = serde_json::Value::String(value.to_string());
+    }
     serde_json::from_value(cat_json).map_err(|e| format!("Invalid generated cat config: {}", e))
 }
 

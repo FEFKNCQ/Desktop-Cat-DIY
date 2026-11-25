@@ -588,9 +588,9 @@ export class KuroCatEngine {
   public setCatAppearance(breedId: string, skin?: CatSkinConfig | null): void {
     const isImageSkin = Boolean(skin && skin.kind === 'image' && skin.imageSkin?.idle);
     if (isImageSkin && skin) {
-      const signature = JSON.stringify(skin.imageSkin);
+      const signature = JSON.stringify(skin);
       this.catBreed = 'black';
-      this.customSkin = null;
+      this.customSkin = resolveCustomSkin(skin);
       catAudio.setPurrIntensity(0);
       if (this.imageSkinId !== skin.id || this.imageSkinSignature !== signature) {
         this.imageSkinId = skin.id;
@@ -2343,7 +2343,11 @@ export class KuroCatEngine {
     if (imageReady) {
       this.drawMiniMouse(ctx);
       this.drawKeyboard(ctx);
+      this.drawTail(ctx);
       this.drawImageSkin(ctx, breath, purrShift);
+      this.drawPaw(ctx, this.leftPaw, breath);
+      this.drawPaw(ctx, this.rightPaw, breath);
+      this.drawCatAliveFx(ctx, performance.now(), breath);
       if (this.showKeyBubbles && !this.privacyMode) {
         this.drawKeyBubbles(ctx);
         this.drawMouseBadges(ctx);

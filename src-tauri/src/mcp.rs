@@ -131,6 +131,23 @@ fn tool_definitions() -> Value {
                         },
                         "additionalProperties": false
                     },
+                    "colors": {
+                        "type": "object",
+                        "description": "Optional sampled colors so animated paws/tail match the generated image. Hex values.",
+                        "properties": {
+                            "furColor": { "type": "string" },
+                            "pawColor": { "type": "string" },
+                            "tailColor": { "type": "string" },
+                            "tailTipColor": { "type": "string" },
+                            "outlineColor": { "type": "string" },
+                            "accentColor": { "type": "string" },
+                            "accentSideColor": { "type": "string" },
+                            "noseColor": { "type": "string" },
+                            "eyeColorTop": { "type": "string" },
+                            "eyeColorBottom": { "type": "string" }
+                        },
+                        "additionalProperties": false
+                    },
                     "activate": {
                         "type": "boolean",
                         "default": true,
@@ -267,7 +284,8 @@ fn execute_tool(name: &str, args: &Value, on_change: &dyn Fn()) -> Value {
             let Some(images) = args.get("images") else {
                 return err_text("Missing required 'images' object argument.");
             };
-            match import_image_cat_files(id_raw, name_raw, images) {
+            let colors = args.get("colors").cloned().unwrap_or_else(|| json!({}));
+            match import_image_cat_files(id_raw, name_raw, images, &colors) {
                 Ok(saved) => {
                     let activate = args
                         .get("activate")

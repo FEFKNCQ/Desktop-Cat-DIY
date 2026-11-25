@@ -1,6 +1,13 @@
 {
   "id": "my-photo-cat",
   "name": "我家猫（照片皮肤）",
+  "colors": {
+    "furColor": "#f2a452",
+    "pawColor": "#fdf6e8",
+    "tailColor": "#eb9640",
+    "outlineColor": "#6b4322",
+    "accentColor": "#ffb347"
+  },
   "images": {
     "idle": "C:\\path\\to\\my-cat-idle.png",
     "blink": "C:\\path\\to\\my-cat-blink.png",

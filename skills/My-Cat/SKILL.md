@@ -63,7 +63,7 @@ https://github.com/FEFKNCQ/Desktop-Cat-DIY
 
 当用户要求“通过 Agent 安装这个项目”“帮我装好然后把猫做成桌宠”时，先执行本阶段。
 
-**版本硬要求**：必须从 main 源码启动，或使用 **v5.2.0+** 安装包。旧 **v5.1.0** 安装包的 MCP 没有 `import_image_cat`，会在导入图片皮肤时报未知工具。若用户已安装旧包，先关闭/卸载旧 KuroCat，再从源码启动或换 v5.2.0+ 安装包。
+**版本硬要求**：必须从 main 源码启动，或使用 **v5.2.1+** 安装包。旧 **v5.1.0** 安装包的 MCP 没有 `import_image_cat`，会在导入图片皮肤时报未知工具。若用户已安装旧包，先关闭/卸载旧 KuroCat，再从源码启动或换 v5.2.1+ 安装包。
 
 ### 一键流程
 
@@ -220,12 +220,23 @@ Agent 需要用自身生图能力生成 PNG，或对用户截图做去背/裁剪
 {
   "id": "my-photo-cat",
   "name": "我家猫（照片皮肤）",
+  "colors": {
+    "furColor": "#f2a452",
+    "pawColor": "#fdf6e8",
+    "tailColor": "#eb9640",
+    "outlineColor": "#6b4322",
+    "accentColor": "#ffb347"
+  },
   "images": {
     "idle": "C:\\path\\to\\my-cat-idle.png"
   },
   "activate": true
 }
 ```
+
+`colors` 可选，但强烈建议根据图片采样填写：`pawColor` / `tailColor` / `furColor` 会让叠加的爪子与尾巴动画更贴近图片。未填写时会用中性浅色。
+
+图片皮肤会继续保留桌宠原有的**爪子挪鼠标、爪子按键盘、尾巴拍键、按键气泡**动画；这些动画层叠在图片之上，不要求生成图里画手脚。
 
 路径必须是 Agent 本机可访问的绝对路径。`import_image_cat` 会把图片复制到：
 
